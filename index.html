@@ -209,7 +209,7 @@
       </div>
       <div style="padding: 0 4px;">
         <div class="card-title" style="margin-bottom:12px;">📋 Ordens Recentes <span class="count" id="ordens-count">0 total</span></div>
-        <div id="ordens-list" style="position:relative;min-height:100px;"></div>
+        <div id="ordens-list" style="display:flex;flex-direction:column;gap:0;"></div>
       </div>
     </div>
   </div>
@@ -499,28 +499,16 @@ function renderOrdens() {
   while (list.firstChild) list.removeChild(list.firstChild);
   if (!ordens.length) {
     var e = document.createElement('div');
-    e.style.color = '#64748b';
-    e.style.padding = '40px';
-    e.style.fontSize = '13px';
+    e.style.cssText = 'color:#64748b;padding:40px;font-size:13px;';
     e.textContent = 'Nenhuma ordem inserida';
     list.appendChild(e);
-    list.style.minHeight = '80px';
     return;
   }
-  var STEP_X = 32; // deslocamento horizontal por card
-  var STEP_Y = 54; // deslocamento vertical por card
-  var CARD_W = 340;
-  var CARD_H = 130;
-  // altura total do container
-  list.style.minHeight = (CARD_H + STEP_Y * (ordens.length - 1) + 20) + 'px';
   ordens.forEach(function(o, i) {
     var key = o._key || o.id;
     var card = document.createElement('div');
-    card.style.cssText = 'position:absolute;width:' + CARD_W + 'px;left:' + (i * STEP_X) + 'px;top:' + (i * STEP_Y) + 'px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;transition:transform 0.15s,box-shadow 0.15s;cursor:default;';
-    card.onmouseenter = function() { this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)'; this.style.zIndex='10'; };
-    card.onmouseleave = function() { this.style.transform=''; this.style.boxShadow=''; this.style.zIndex=''; };
+    card.style.cssText = 'width:380px;max-width:100%;margin-left:' + (i * 28) + 'px;margin-bottom:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;';
 
-    // Header: matrícula + pessoa
     var header = document.createElement('div');
     header.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
     if (o.matricula) {
@@ -537,7 +525,6 @@ function renderOrdens() {
     }
     card.appendChild(header);
 
-    // Badges: preço, custo, ref
     var badges = document.createElement('div');
     badges.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
     if (o.preco) {
@@ -560,7 +547,6 @@ function renderOrdens() {
     }
     card.appendChild(badges);
 
-    // Footer: hora + botão eliminar
     var footer = document.createElement('div');
     footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:2px;';
     var time = document.createElement('span');
