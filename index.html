@@ -141,18 +141,19 @@
 
   .scroll-list { max-height: 500px; overflow-y: auto; }
 
-  #overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.6); overflow-y: auto; }
-  #overlay.show { display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; }
-  #toast-container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; }
-  .toast-box { border-radius: 16px; padding: 24px 28px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.8); text-align: center; animation: popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275); }
-  .toast-box.ordem { background: linear-gradient(135deg, #FF6B00, #FF9500); box-shadow: 0 0 60px rgba(255,107,0,0.5); border: 2px solid rgba(255,200,100,0.5); }
-  .toast-box.van   { background: linear-gradient(135deg, #1a3a6b, #2563EB); box-shadow: 0 0 60px rgba(37,99,235,0.5); border: 2px solid rgba(100,160,255,0.5); }
-  .toast-icon  { font-size: 36px; margin-bottom: 6px; }
-  .toast-title { color: white; font-size: 18px; font-weight: 900; margin-bottom: 8px; font-family: 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
-  .toast-msg   { color: rgba(255,255,255,0.9); font-size: 14px; margin-bottom: 16px; font-family: monospace; }
-  .toast-close { background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.5); color: white; padding: 8px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 1px; font-family: 'Rajdhani', sans-serif; }
-  #toast-close-all { background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4); color: white; padding: 10px 32px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 1px; font-family: 'Rajdhani', sans-serif; width: 100%; margin-top: 4px; }
+  #overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.45); }
+  #overlay.show { display: flex; align-items: center; justify-content: center; }
 
+  .toast-box { border-radius: 16px; padding: 32px 40px; max-width: 480px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.8); text-align: center; animation: popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275); }
+  .toast-box.ordem { background: linear-gradient(135deg, #FF6B00, #FF9500); box-shadow: 0 0 80px rgba(255,107,0,0.6), 0 20px 60px rgba(0,0,0,0.8); border: 2px solid rgba(255,200,100,0.5); }
+  .toast-box.van   { background: linear-gradient(135deg, #1a3a6b, #2563EB); box-shadow: 0 0 80px rgba(37,99,235,0.6), 0 20px 60px rgba(0,0,0,0.8); border: 2px solid rgba(100,160,255,0.5); }
+  .toast-icon  { font-size: 48px; margin-bottom: 8px; }
+  .toast-title { color: white; font-size: 22px; font-weight: 900; margin-bottom: 12px; font-family: 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+  .toast-msg   { color: rgba(255,255,255,0.9); font-size: 15px; margin-bottom: 20px; font-family: monospace; }
+  .toast-close { background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.5); color: white; padding: 10px 32px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 1px; font-family: 'Rajdhani', sans-serif; }
+  .toast-more  { color: rgba(255,255,255,0.6); margin-top: 10px; font-size: 12px; }
+
+  #tab-notas.active { display: block !important; }
   #tab-notas.active { display: block !important; }
   @media (max-width: 700px) {
     .tab-content.active { grid-template-columns: 1fr; }
@@ -198,16 +199,7 @@
         <div class="card-title">➕ Nova Ordem de Carga</div>
         <div class="grid2">
           <div class="field"><label>Matrícula / Transportador</label><input id="f-matricula" placeholder="XX-00-XX / Nome"></div>
-          <div class="field"><label>Pessoa a Enviar</label>
-        <select id="f-pessoa">
-          <option value="">— Selecionar —</option>
-          <option value="Eduardo">Eduardo</option>
-          <option value="Fernando">Fernando</option>
-          <option value="Bruna">Bruna</option>
-          <option value="Ilona">Ilona</option>
-          <option value="Daniel">Daniel</option>
-        </select>
-      </div>
+          <div class="field"><label>Pessoa a Enviar</label><select id="f-pessoa" style="font-family:'Rajdhani',sans-serif;width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;"><option value="">— Selecionar —</option><option>Eduardo</option><option>Fernando</option><option>Bruna</option><option>Ilona</option><option>Daniel</option></select></div>
         </div>
         <div class="grid2">
           <div class="field"><label>Preço (€)</label><input id="f-preco" type="number" step="0.01" placeholder="0.00"></div>
@@ -216,9 +208,9 @@
         <div class="field"><label>Referência / E-mail (Horas)</label><input id="f-ref" placeholder="REF001 / email@... / 08:00h"></div>
         <button class="btn btn-orange" id="btn-ordem" onclick="submitOrdem()">🚀 Inserir Ordem</button>
       </div>
-      <div style="margin-top:8px;">
-        <div class="card-title" style="margin-bottom:16px;">👥 Ordens por Pessoa <span class="count" id="ordens-count">0 total</span></div>
-        <div id="perfis-grid" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px;"></div>
+      <div style="padding: 0 4px;">
+        <div class="card-title" style="margin-bottom:12px;">📋 Ordens Recentes <span class="count" id="ordens-count">0 total</span></div>
+        <div id="perfis-grid" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:8px;"></div>
       </div>
     </div>
   </div>
@@ -290,12 +282,28 @@
     <div id="notas-grid" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px;margin-top:4px;"></div>
   </div>
 
+  <!-- NOTAS TAB -->
+  <div id="tab-notas" class="tab-content">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">📝 Nova Nota <span class="count" id="notas-count">0 total</span></div>
+      <div style="display:flex;gap:12px;align-items:flex-end;">
+        <div class="field" style="margin:0;flex:1;"><textarea id="nota-input" placeholder="Escreve aqui a nota..." rows="2" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;resize:none;font-family:'Rajdhani',sans-serif;" onkeydown="if(event.ctrlKey&&event.key==='Enter')addNota()"></textarea></div>
+        <button class="btn btn-orange" onclick="addNota()" style="width:auto;padding:11px 28px;">📌 Adicionar</button>
+      </div>
+    </div>
+    <div id="notas-grid" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px;margin-top:4px;"></div>
+  </div>
+
 </div>
 
 <!-- OVERLAY / TOAST -->
-<div id="overlay">
-  <div id="toast-container">
-    <button id="toast-close-all" onclick="dismissAllToasts()">✕ FECHAR TUDO</button>
+<div id="overlay" onclick="dismissToast()">
+  <div id="toast-box" class="toast-box ordem">
+    <div class="toast-icon"  id="toast-icon">🚚</div>
+    <div class="toast-title" id="toast-title">NOVA ORDEM DE CARGA</div>
+    <div class="toast-msg"   id="toast-msg"></div>
+    <button class="toast-close" onclick="dismissToast()">FECHAR</button>
+    <div class="toast-more"  id="toast-more"></div>
   </div>
 </div>
 
@@ -314,6 +322,7 @@ if (isConfigured) {
   notifsRef    = db.ref('notifs');
   extraHoursRef= db.ref('extraHours');
   notasRef = db.ref('notas');
+  notasRef = db.ref('notas');
 } else {
   document.getElementById('setup-banner').classList.add('show');
   document.getElementById('live-dot').classList.add('offline');
@@ -324,13 +333,7 @@ if (isConfigured) {
 let ordens = [];
 let vans   = [];
 let extraHours = [];
-// Apenas bloquear notificações antigas (> 5 min) para evitar mostrar no reload
-const rawSeen = JSON.parse(localStorage.getItem('tms_seen_v3') || '[]');
-const seenTimestamps = JSON.parse(localStorage.getItem('tms_seen_ts') || '{}');
-// Filtrar apenas IDs com menos de 5 minutos
-const agora = Date.now();
-const filteredSeen = rawSeen.filter(id => seenTimestamps[id] && (agora - seenTimestamps[id]) < 300000);
-const seenNotifs = new Set(filteredSeen);
+const seenNotifs = new Set(JSON.parse(localStorage.getItem('tms_seen_v3') || '[]'));
 let toastQueue = [], vanToastQueue = [];
 const firedAlerts = new Set(JSON.parse(localStorage.getItem('tms_fired_v3') || '[]'));
 const FIXED_HOURS = ['06:30', '10:30', '14:30', '18:30', '22:30'];
@@ -357,64 +360,42 @@ function minutesAgo(ts) { return Math.floor((Date.now() - ts) / 60000); }
 // ─── TOAST ───────────────────────────────────────────────────────────────────
 function showToast(notif) {
   const isVan = notif.type === 'van';
-  const container = document.getElementById('toast-container');
-  const closeAll = document.getElementById('toast-close-all');
-
-  const box = document.createElement('div');
+  const box = document.getElementById('toast-box');
   box.className = 'toast-box ' + (isVan ? 'van' : 'ordem');
-  box.setAttribute('data-notif-id', notif.id);
-  box.innerHTML = `
-    <div class="toast-icon">${isVan ? '🚐' : '🚚'}</div>
-    <div class="toast-title">${isVan ? 'UPDATE DE CARRINHA' : 'NOVA ORDEM DE CARGA'}</div>
-    <div class="toast-msg">${notif.message}</div>
-    <button class="toast-close" onclick="dismissToast('${notif.id}')">FECHAR</button>`;
-
-  // Inserir antes do botão "fechar tudo"
-  container.insertBefore(box, closeAll);
+  document.getElementById('toast-icon').textContent  = isVan ? '🚐' : '🚚';
+  document.getElementById('toast-title').textContent = isVan ? 'UPDATE DE CARRINHA' : 'NOVA ORDEM DE CARGA';
+  document.getElementById('toast-msg').textContent   = notif.message;
+  const remaining = (isVan ? vanToastQueue : toastQueue).length;
+  document.getElementById('toast-more').textContent  = remaining > 0 ? `+${remaining} mais notificações` : '';
   document.getElementById('overlay').classList.add('show');
 }
 
-function dismissToast(id) {
-  const box = document.querySelector('[data-notif-id="' + id + '"]');
-  if (box) box.remove();
-  const container = document.getElementById('toast-container');
-  const remaining = container.querySelectorAll('.toast-box').length;
-  if (remaining === 0) document.getElementById('overlay').classList.remove('show');
-}
-
-function dismissAllToasts() {
-  const container = document.getElementById('toast-container');
-  container.querySelectorAll('.toast-box').forEach(function(b) { b.remove(); });
+function dismissToast() {
   document.getElementById('overlay').classList.remove('show');
+  setTimeout(() => {
+    if (toastQueue.length > 0) showToast(toastQueue.shift());
+    else if (vanToastQueue.length > 0) showToast(vanToastQueue.shift());
+  }, 200);
 }
 
 function handleIncomingNotif(notif) {
-  // Se já está a ser mostrada no ecrã, ignorar
-  if (document.querySelector('[data-notif-id="' + notif.id + '"]')) return;
-  // Se já foi vista nesta sessão, ignorar
   if (seenNotifs.has(notif.id)) return;
-  // Se é muito antiga (> 5 min), ignorar silenciosamente
-  if (Date.now() - notif.ts > 300000) {
-    seenNotifs.add(notif.id);
-    seenTimestamps[notif.id] = Date.now() - 400000;
-    localStorage.setItem('tms_seen_v3', JSON.stringify([...seenNotifs].slice(-300)));
-    localStorage.setItem('tms_seen_ts', JSON.stringify(seenTimestamps));
-    return;
-  }
-
-  // Marcar como vista
   seenNotifs.add(notif.id);
-  seenTimestamps[notif.id] = Date.now();
   localStorage.setItem('tms_seen_v3', JSON.stringify([...seenNotifs].slice(-300)));
-  localStorage.setItem('tms_seen_ts', JSON.stringify(seenTimestamps));
 
+  // System OS notification (shows even if on another tab/window)
   const isVan = notif.type === 'van';
   sendSystemNotif(
     isVan ? '🚐 Update de Carrinha — TMS' : '🚚 Nova Ordem de Carga — TMS',
     notif.message
   );
 
-  showToast(notif);
+  if (notif.type === 'van') vanToastQueue.push(notif);
+  else toastQueue.push(notif);
+  if (!document.getElementById('overlay').classList.contains('show')) {
+    if (toastQueue.length > 0) showToast(toastQueue.shift());
+    else if (vanToastQueue.length > 0) showToast(vanToastQueue.shift());
+  }
 }
 
 // ─── SYSTEM NOTIFICATIONS ────────────────────────────────────────────────────
@@ -439,23 +420,18 @@ function pushNotif(type, message) {
   const notif = { id: type + '_' + Date.now() + '_' + Math.random().toString(36).slice(2), type, message, ts: Date.now() };
   if (isConfigured) {
     notifsRef.push(notif);
-    // Limpar notifs antigas com delay para não apagar as recém-inseridas
-    setTimeout(function() {
-      notifsRef.once('value', snap => {
-        snap.forEach(child => {
-          if (Date.now() - child.val().ts > 120000) child.ref.remove();
-        });
+    // Clean notifs older than 2 min
+    notifsRef.once('value', snap => {
+      snap.forEach(child => {
+        if (Date.now() - child.val().ts > 120000) child.ref.remove();
       });
-    }, 5000);
+    });
   } else {
     handleIncomingNotif(notif);
   }
 }
 
 // ─── FIREBASE LISTENERS ──────────────────────────────────────────────────────
-// Inicializar perfis sempre antes dos listeners
-initPerfis();
-
 if (isConfigured) {
   // Ordens
   ordensRef.on('value', snap => {
@@ -531,21 +507,53 @@ function deleteOrdem(key) {
   }
 }
 
-function renderOrdens() {
-  var PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
-  var total = ordens.length;
-  var countEl = document.getElementById('ordens-count');
-  if (countEl) countEl.textContent = total + ' total';
+var PERFIL_PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
+var PERFIL_CORES = {'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981'};
 
-  PESSOAS.forEach(function(nome) {
-    var perfil = document.getElementById('perfil-' + nome.toLowerCase());
-    if (!perfil) return;
-    var badge = perfil.querySelector('.perfil-badge');
-    var lista = perfil.querySelector('.perfil-lista');
-    if (!lista) return;
+function renderOrdens() {
+  var countEl = document.getElementById('ordens-count');
+  if (countEl) countEl.textContent = ordens.length + ' total';
+  var grid = document.getElementById('perfis-grid');
+  if (!grid) return;
+
+  PERFIL_PESSOAS.forEach(function(nome) {
+    var cor = PERFIL_CORES[nome];
+    var pid = 'perfil-' + nome.toLowerCase();
+    var perfil = document.getElementById(pid);
+
+    if (!perfil) {
+      perfil = document.createElement('div');
+      perfil.id = pid;
+      perfil.style.cssText = 'flex:1;min-width:180px;max-width:220px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
+      var hdr = document.createElement('div');
+      hdr.style.cssText = 'background:'+cor+'22;border-bottom:2px solid '+cor+';padding:12px 14px;display:flex;align-items:center;gap:8px;';
+      var av = document.createElement('div');
+      av.style.cssText = 'width:32px;height:32px;border-radius:50%;background:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:700;color:white;flex-shrink:0;font-size:15px;';
+      av.textContent = nome[0];
+      var nm = document.createElement('div');
+      nm.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;';
+      nm.textContent = nome;
+      var bg = document.createElement('div');
+      bg.id = pid+'-badge';
+      bg.style.cssText = 'margin-left:auto;background:'+cor+';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;min-width:20px;text-align:center;';
+      bg.textContent = '0';
+      hdr.appendChild(av); hdr.appendChild(nm); hdr.appendChild(bg);
+      perfil.appendChild(hdr);
+      var lst = document.createElement('div');
+      lst.id = pid+'-lista';
+      lst.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;';
+      perfil.appendChild(lst);
+      grid.appendChild(perfil);
+    }
+
+    var badge = document.getElementById(pid+'-badge');
+    var lista = document.getElementById(pid+'-lista');
+    if (!badge || !lista) return;
+
     var ordensP = ordens.filter(function(o) { return o.pessoa === nome; });
-    if (badge) badge.textContent = ordensP.length;
+    badge.textContent = ordensP.length;
     while (lista.firstChild) lista.removeChild(lista.firstChild);
+
     if (!ordensP.length) {
       var v = document.createElement('div');
       v.style.cssText = 'color:#475569;font-size:11px;text-align:center;padding:12px 0;';
@@ -555,7 +563,7 @@ function renderOrdens() {
       ordensP.forEach(function(o) {
         var key = o._key || o.id;
         var item = document.createElement('div');
-        item.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;font-size:12px;';
+        item.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;';
         var top = document.createElement('div');
         top.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
         var mat = document.createElement('span');
@@ -565,18 +573,18 @@ function renderOrdens() {
         del.className = 'delete-btn';
         del.textContent = '✕';
         del.style.padding = '2px 6px';
-        (function(k) { del.onclick = function() { deleteOrdem(k); }; })(key);
+        (function(k){ del.onclick = function(){ deleteOrdem(k); }; })(key);
         top.appendChild(mat); top.appendChild(del);
         item.appendChild(top);
         var info = document.createElement('div');
-        info.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
-        if (o.preco) { var p = document.createElement('span'); p.className='badge badge-green'; p.style.fontSize='10px'; p.textContent='💶 '+o.preco+'€'; info.appendChild(p); }
-        if (o.custo) { var c = document.createElement('span'); c.className='badge badge-amber'; c.style.fontSize='10px'; c.textContent='💰 '+o.custo+'€'; info.appendChild(c); }
-        if (o.ref)   { var r = document.createElement('span'); r.style.cssText='color:#94a3b8;font-size:10px;'; r.textContent='📧 '+o.ref; info.appendChild(r); }
+        info.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;';
+        if(o.preco){var p=document.createElement('span');p.className='badge badge-green';p.style.fontSize='10px';p.textContent='💶 '+o.preco+'€';info.appendChild(p);}
+        if(o.custo){var c=document.createElement('span');c.className='badge badge-amber';c.style.fontSize='10px';c.textContent='💰 '+o.custo+'€';info.appendChild(c);}
+        if(o.ref){var r=document.createElement('span');r.style.cssText='color:#94a3b8;font-size:10px;';r.textContent='📧 '+o.ref;info.appendChild(r);}
         item.appendChild(info);
-        var ts = document.createElement('div');
-        ts.style.cssText = 'color:#475569;font-size:10px;margin-top:4px;';
-        ts.textContent = formatTime(o.ts);
+        var ts=document.createElement('div');
+        ts.style.cssText='color:#475569;font-size:10px;margin-top:4px;';
+        ts.textContent=formatTime(o.ts);
         item.appendChild(ts);
         lista.appendChild(item);
       });
@@ -891,44 +899,53 @@ if (isConfigured) {
 }
 
 
-// ─── INIT PERFIS ─────────────────────────────────────────────────────────────
-function initPerfis() {
-  var PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
-  var CORES = {'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981'};
-  var grid = document.getElementById('perfis-grid');
+// ─── NOTAS ───────────────────────────────────────────────────────────────────
+let notas = [];
+const N_CORES = ['#fef08a','#bbf7d0','#bfdbfe','#fecaca','#e9d5ff','#fed7aa'];
+const N_ROTS  = ['-1.5deg','1.2deg','-0.8deg','2deg','-1.8deg','0.5deg'];
+function addNota() {
+  var input = document.getElementById('nota-input');
+  var texto = input.value.trim();
+  if (!texto) return;
+  var nova = { texto: texto, ts: Date.now(), cor: N_CORES[Math.floor(Math.random()*N_CORES.length)] };
+  if (isConfigured) { notasRef.push(nova); }
+  else { nova._key = String(Date.now()); notas.unshift(nova); renderNotas(); }
+  input.value = '';
+}
+function deleteNota(key) {
+  if (isConfigured) { notasRef.child(key).remove(); }
+  else { notas = notas.filter(function(n){ return n._key !== key; }); renderNotas(); }
+}
+function renderNotas() {
+  var grid = document.getElementById('notas-grid');
   if (!grid) return;
-  // Limpar grid antes de criar
+  var countEl = document.getElementById('notas-count');
+  if (countEl) countEl.textContent = notas.length + ' total';
   while (grid.firstChild) grid.removeChild(grid.firstChild);
-  PESSOAS.forEach(function(nome) {
-    var cor = CORES[nome];
-    var perfil = document.createElement('div');
-    perfil.id = 'perfil-' + nome.toLowerCase();
-    perfil.style.cssText = 'flex:1;min-width:180px;max-width:240px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
-    var header = document.createElement('div');
-    header.style.cssText = 'background:'+cor+'22;border-bottom:2px solid '+cor+';padding:12px 14px;display:flex;align-items:center;gap:8px;';
-    var av = document.createElement('div');
-    av.style.cssText = 'width:32px;height:32px;border-radius:50%;background:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:700;color:white;flex-shrink:0;';
-    av.textContent = nome[0];
-    var nd = document.createElement('div');
-    nd.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;letter-spacing:1px;';
-    nd.textContent = nome;
-    var bg = document.createElement('div');
-    bg.className = 'perfil-badge';
-    bg.style.cssText = 'margin-left:auto;background:'+cor+';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;';
-    bg.textContent = '0';
-    header.appendChild(av); header.appendChild(nd); header.appendChild(bg);
-    perfil.appendChild(header);
-    var lista = document.createElement('div');
-    lista.className = 'perfil-lista';
-    lista.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;';
-    var vazio = document.createElement('div');
-    vazio.style.cssText = 'color:#475569;font-size:11px;text-align:center;padding:12px 0;';
-    vazio.textContent = 'Sem ordens';
-    lista.appendChild(vazio);
-    perfil.appendChild(lista);
-    grid.appendChild(perfil);
+  if (!notas.length) {
+    var e = document.createElement('div'); e.style.cssText='color:#64748b;padding:40px;font-size:13px;'; e.textContent='Nenhuma nota adicionada'; grid.appendChild(e); return;
+  }
+  notas.forEach(function(n,i) {
+    var cor=n.cor||N_CORES[0], rot=N_ROTS[i%N_ROTS.length], key=n._key;
+    var d=new Date(n.ts).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    var card=document.createElement('div');
+    card.style.width='200px';card.style.minWidth='200px';card.style.flexShrink='0';card.style.background=cor;card.style.borderRadius='4px 4px 4px 16px';card.style.padding='16px';card.style.boxShadow='3px 4px 12px rgba(0,0,0,0.45)';card.style.minHeight='120px';card.style.display='flex';card.style.flexDirection='column';card.style.justifyContent='space-between';card.style.transform='rotate('+rot+')';card.style.boxSizing='border-box';
+    var txt=document.createElement('div');txt.style.cssText='color:#1a1a1a;font-size:14px;font-weight:600;line-height:1.5;word-break:break-word;flex:1;margin-bottom:8px;';txt.textContent=n.texto;
+    var ftr=document.createElement('div');ftr.style.cssText='display:flex;justify-content:space-between;align-items:center;';
+    var ts=document.createElement('span');ts.style.cssText='color:rgba(0,0,0,0.4);font-size:10px;font-weight:600;';ts.textContent=d;
+    var btn=document.createElement('button');btn.style.cssText='background:rgba(0,0,0,0.15);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;color:rgba(0,0,0,0.5);font-weight:700;';btn.textContent='✕';
+    (function(k){btn.onclick=function(){deleteNota(k);};})(key);
+    ftr.appendChild(ts);ftr.appendChild(btn);card.appendChild(txt);card.appendChild(ftr);grid.appendChild(card);
   });
 }
+if (isConfigured) {
+  notasRef.on('value', function(snap) {
+    notas = [];
+    snap.forEach(function(child){ var v=child.val(); v._key=child.key; notas.push(v); });
+    notas.sort(function(a,b){return b.ts-a.ts;});
+    renderNotas();
+  });
+} else { renderNotas(); }
 
 setInterval(checkVanAlerts, 10000);
 setInterval(() => { if (vans.length) renderVans(); }, 30000); // refresh countdown every 30s
