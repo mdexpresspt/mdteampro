@@ -501,15 +501,15 @@ function renderOrdens() {
   var countEl = document.getElementById('ordens-count');
   if (countEl) countEl.textContent = ordens.length + ' total';
   var grid = document.getElementById('perfis-grid');
-  if (!grid) return;
+  if (!grid) { console.log('perfis-grid NAO ENCONTRADO'); return; }
 
   PESSOAS.forEach(function(nome) {
     var cor = CORES[nome];
     var pid = 'perfil-' + nome.toLowerCase();
+    var perfil = document.getElementById(pid);
 
-    // Criar perfil se não existe ainda
-    if (!document.getElementById(pid)) {
-      var perfil = document.createElement('div');
+    if (!perfil) {
+      perfil = document.createElement('div');
       perfil.id = pid;
       perfil.style.cssText = 'flex:1;min-width:180px;max-width:220px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
       var hdr = document.createElement('div');
@@ -533,14 +533,12 @@ function renderOrdens() {
       grid.appendChild(perfil);
     }
 
-    // Actualizar badge e lista
     var badge = document.getElementById(pid+'-badge');
     var lista = document.getElementById(pid+'-lista');
     if (!badge || !lista) return;
     var ordensP = ordens.filter(function(o) { return o.pessoa === nome; });
     badge.textContent = ordensP.length;
     while (lista.firstChild) lista.removeChild(lista.firstChild);
-
     if (!ordensP.length) {
       var v = document.createElement('div');
       v.style.cssText = 'color:#475569;font-size:11px;text-align:center;padding:12px 0;';
@@ -930,7 +928,7 @@ setInterval(checkVanAlerts, 10000);
 setInterval(() => { if (vans.length) renderVans(); }, 30000); // refresh countdown every 30s
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
-renderOrdens(); // criar perfis vazios imediatamente
+window.addEventListener("load", function() { renderOrdens(); });
 if (!isConfigured) {
   renderOrdens();
   renderVans();
