@@ -154,7 +154,6 @@
   .toast-more  { color: rgba(255,255,255,0.6); margin-top: 10px; font-size: 12px; }
 
   #tab-notas.active { display: block !important; }
-  #tab-notas.active { display: block !important; }
   @media (max-width: 700px) {
     .tab-content.active { grid-template-columns: 1fr; }
     .grid2 { grid-template-columns: 1fr; }
@@ -199,7 +198,7 @@
         <div class="card-title">➕ Nova Ordem de Carga</div>
         <div class="grid2">
           <div class="field"><label>Matrícula / Transportador</label><input id="f-matricula" placeholder="XX-00-XX / Nome"></div>
-          <div class="field"><label>Pessoa a Enviar</label><select id="f-pessoa" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;font-family:'Rajdhani',sans-serif;"><option value="">— Selecionar —</option><option>Eduardo</option><option>Fernando</option><option>Bruna</option><option>Ilona</option><option>Daniel</option></select></div>
+          <div class="field"><label>Pessoa a Enviar</label><input id="f-pessoa" placeholder="Nome da pessoa..."></div>
         </div>
         <div class="grid2">
           <div class="field"><label>Preço (€)</label><input id="f-preco" type="number" step="0.01" placeholder="0.00"></div>
@@ -209,8 +208,8 @@
         <button class="btn btn-orange" id="btn-ordem" onclick="submitOrdem()">🚀 Inserir Ordem</button>
       </div>
       <div style="padding: 0 4px;">
-        <div class="card-title" style="margin-bottom:12px;">👥 Ordens por Pessoa <span class="count" id="ordens-count">0 total</span></div>
-        <div id="perfis-grid" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:8px;"></div>
+        <div class="card-title" style="margin-bottom:12px;">📋 Ordens Recentes <span class="count" id="ordens-count">0 total</span></div>
+        <div id="ordens-list" style="position:relative;min-height:100px;"></div>
       </div>
     </div>
   </div>
@@ -309,7 +308,6 @@ if (isConfigured) {
   vansRef      = db.ref('vans');
   notifsRef    = db.ref('notifs');
   extraHoursRef= db.ref('extraHours');
-  notasRef = db.ref('notas');
   notasRef = db.ref('notas');
 } else {
   document.getElementById('setup-banner').classList.add('show');
@@ -496,81 +494,87 @@ function deleteOrdem(key) {
 }
 
 function renderOrdens() {
-  var PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
-  var CORES = {'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981'};
-  var countEl = document.getElementById('ordens-count');
-  if (countEl) countEl.textContent = ordens.length + ' total';
-  var grid = document.getElementById('perfis-grid');
-  if (!grid) { console.log('perfis-grid NAO ENCONTRADO'); return; }
+  var list = document.getElementById('ordens-list');
+  document.getElementById('ordens-count').textContent = ordens.length + ' total';
+  while (list.firstChild) list.removeChild(list.firstChild);
+  if (!ordens.length) {
+    var e = document.createElement('div');
+    e.style.color = '#64748b';
+    e.style.padding = '40px';
+    e.style.fontSize = '13px';
+    e.textContent = 'Nenhuma ordem inserida';
+    list.appendChild(e);
+    list.style.minHeight = '80px';
+    return;
+  }
+  var STEP_X = 32; // deslocamento horizontal por card
+  var STEP_Y = 54; // deslocamento vertical por card
+  var CARD_W = 340;
+  var CARD_H = 130;
+  // altura total do container
+  list.style.minHeight = (CARD_H + STEP_Y * (ordens.length - 1) + 20) + 'px';
+  ordens.forEach(function(o, i) {
+    var key = o._key || o.id;
+    var card = document.createElement('div');
+    card.style.cssText = 'position:absolute;width:' + CARD_W + 'px;left:' + (i * STEP_X) + 'px;top:' + (i * STEP_Y) + 'px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;transition:transform 0.15s,box-shadow 0.15s;cursor:default;';
+    card.onmouseenter = function() { this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)'; this.style.zIndex='10'; };
+    card.onmouseleave = function() { this.style.transform=''; this.style.boxShadow=''; this.style.zIndex=''; };
 
-  PESSOAS.forEach(function(nome) {
-    var cor = CORES[nome];
-    var pid = 'perfil-' + nome.toLowerCase();
-    var perfil = document.getElementById(pid);
-
-    if (!perfil) {
-      perfil = document.createElement('div');
-      perfil.id = pid;
-      perfil.style.cssText = 'flex:1;min-width:180px;max-width:220px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
-      var hdr = document.createElement('div');
-      hdr.style.cssText = 'background:'+cor+'22;border-bottom:2px solid '+cor+';padding:12px 14px;display:flex;align-items:center;gap:8px;';
-      var av = document.createElement('div');
-      av.style.cssText = 'width:32px;height:32px;border-radius:50%;background:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:700;color:white;flex-shrink:0;';
-      av.textContent = nome[0];
-      var nm = document.createElement('div');
-      nm.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;';
-      nm.textContent = nome;
-      var bg = document.createElement('div');
-      bg.id = pid+'-badge';
-      bg.style.cssText = 'margin-left:auto;background:'+cor+';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;min-width:20px;text-align:center;';
-      bg.textContent = '0';
-      hdr.appendChild(av); hdr.appendChild(nm); hdr.appendChild(bg);
-      perfil.appendChild(hdr);
-      var lst = document.createElement('div');
-      lst.id = pid+'-lista';
-      lst.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;';
-      perfil.appendChild(lst);
-      grid.appendChild(perfil);
+    // Header: matrícula + pessoa
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
+    if (o.matricula) {
+      var mat = document.createElement('span');
+      mat.style.cssText = 'color:#f1f5f9;font-weight:700;font-size:15px;';
+      mat.textContent = o.matricula;
+      header.appendChild(mat);
     }
-
-    var badge = document.getElementById(pid+'-badge');
-    var lista = document.getElementById(pid+'-lista');
-    if (!badge || !lista) return;
-    var ordensP = ordens.filter(function(o) { return o.pessoa === nome; });
-    badge.textContent = ordensP.length;
-    while (lista.firstChild) lista.removeChild(lista.firstChild);
-    if (!ordensP.length) {
-      var v = document.createElement('div');
-      v.style.cssText = 'color:#475569;font-size:11px;text-align:center;padding:12px 0;';
-      v.textContent = 'Sem ordens';
-      lista.appendChild(v);
-    } else {
-      ordensP.forEach(function(o) {
-        var key = o._key || o.id;
-        var item = document.createElement('div');
-        item.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;';
-        var top = document.createElement('div');
-        top.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
-        var mat = document.createElement('span');
-        mat.style.cssText = 'font-weight:700;color:#f1f5f9;font-size:13px;';
-        mat.textContent = o.matricula || '—';
-        var del = document.createElement('button');
-        del.className = 'delete-btn';
-        del.textContent = '✕';
-        del.style.padding = '2px 6px';
-        (function(k){ del.onclick = function(){ deleteOrdem(k); }; })(key);
-        top.appendChild(mat); top.appendChild(del);
-        item.appendChild(top);
-        var info = document.createElement('div');
-        info.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;';
-        if(o.preco){var p=document.createElement('span');p.className='badge badge-green';p.style.fontSize='10px';p.textContent='💶 '+o.preco+'€';info.appendChild(p);}
-        if(o.custo){var c=document.createElement('span');c.className='badge badge-amber';c.style.fontSize='10px';c.textContent='💰 '+o.custo+'€';info.appendChild(c);}
-        if(o.ref){var r=document.createElement('span');r.style.cssText='color:#94a3b8;font-size:10px;';r.textContent='📧 '+o.ref;info.appendChild(r);}
-        item.appendChild(info);
-        var ts=document.createElement('div');ts.style.cssText='color:#475569;font-size:10px;margin-top:4px;';ts.textContent=formatTime(o.ts);item.appendChild(ts);
-        lista.appendChild(item);
-      });
+    if (o.pessoa) {
+      var pessoa = document.createElement('span');
+      pessoa.className = 'badge badge-purple';
+      pessoa.textContent = '👤 ' + o.pessoa;
+      header.appendChild(pessoa);
     }
+    card.appendChild(header);
+
+    // Badges: preço, custo, ref
+    var badges = document.createElement('div');
+    badges.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
+    if (o.preco) {
+      var p = document.createElement('span');
+      p.className = 'badge badge-green';
+      p.textContent = '💶 ' + o.preco + '€';
+      badges.appendChild(p);
+    }
+    if (o.custo) {
+      var c = document.createElement('span');
+      c.className = 'badge badge-amber';
+      c.textContent = '💰 ' + o.custo + '€';
+      badges.appendChild(c);
+    }
+    if (o.ref) {
+      var r = document.createElement('span');
+      r.style.cssText = 'color:#94a3b8;font-size:12px;';
+      r.textContent = '📧 ' + o.ref;
+      badges.appendChild(r);
+    }
+    card.appendChild(badges);
+
+    // Footer: hora + botão eliminar
+    var footer = document.createElement('div');
+    footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:2px;';
+    var time = document.createElement('span');
+    time.style.cssText = 'color:#475569;font-size:11px;';
+    time.textContent = formatTime(o.ts);
+    var btn = document.createElement('button');
+    btn.className = 'delete-btn';
+    btn.textContent = '✕ Eliminar';
+    (function(k) { btn.onclick = function() { deleteOrdem(k); }; })(key);
+    footer.appendChild(time);
+    footer.appendChild(btn);
+    card.appendChild(footer);
+
+    list.appendChild(card);
   });
 }
 
@@ -880,55 +884,10 @@ if (isConfigured) {
   renderNotas();
 }
 
-
-// ─── NOTAS ───────────────────────────────────────────────────────────────────
-let notas = [];
-const N_CORES = ['#fef08a','#bbf7d0','#bfdbfe','#fecaca','#e9d5ff','#fed7aa'];
-const N_ROTS  = ['-1.5deg','1.2deg','-0.8deg','2deg','-1.8deg','0.5deg'];
-function addNota() {
-  var input = document.getElementById('nota-input');
-  var texto = input.value.trim();
-  if (!texto) return;
-  var nova = { texto: texto, ts: Date.now(), cor: N_CORES[Math.floor(Math.random()*N_CORES.length)] };
-  if (isConfigured) { notasRef.push(nova); }
-  else { nova._key = String(Date.now()); notas.unshift(nova); renderNotas(); }
-  input.value = '';
-}
-function deleteNota(key) {
-  if (isConfigured) { notasRef.child(key).remove(); }
-  else { notas = notas.filter(function(n){ return n._key !== key; }); renderNotas(); }
-}
-function renderNotas() {
-  var grid = document.getElementById('notas-grid');
-  if (!grid) return;
-  var countEl = document.getElementById('notas-count');
-  if (countEl) countEl.textContent = notas.length + ' total';
-  while (grid.firstChild) grid.removeChild(grid.firstChild);
-  if (!notas.length) { var e=document.createElement('div');e.style.cssText='color:#64748b;padding:40px;font-size:13px;';e.textContent='Nenhuma nota adicionada';grid.appendChild(e);return; }
-  notas.forEach(function(n,i) {
-    var cor=n.cor||N_CORES[0],rot=N_ROTS[i%N_ROTS.length],key=n._key;
-    var d=new Date(n.ts).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-    var card=document.createElement('div');
-    card.style.width='200px';card.style.minWidth='200px';card.style.flexShrink='0';card.style.background=cor;card.style.borderRadius='4px 4px 4px 16px';card.style.padding='16px';card.style.boxShadow='3px 4px 12px rgba(0,0,0,0.45)';card.style.minHeight='120px';card.style.display='flex';card.style.flexDirection='column';card.style.justifyContent='space-between';card.style.transform='rotate('+rot+')';card.style.boxSizing='border-box';
-    var txt=document.createElement('div');txt.style.cssText='color:#1a1a1a;font-size:14px;font-weight:600;line-height:1.5;word-break:break-word;flex:1;margin-bottom:8px;';txt.textContent=n.texto;
-    var ftr=document.createElement('div');ftr.style.cssText='display:flex;justify-content:space-between;align-items:center;';
-    var ts=document.createElement('span');ts.style.cssText='color:rgba(0,0,0,0.4);font-size:10px;font-weight:600;';ts.textContent=d;
-    var btn=document.createElement('button');btn.style.cssText='background:rgba(0,0,0,0.15);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;color:rgba(0,0,0,0.5);font-weight:700;';btn.textContent='✕';
-    (function(k){btn.onclick=function(){deleteNota(k);};})(key);
-    ftr.appendChild(ts);ftr.appendChild(btn);card.appendChild(txt);card.appendChild(ftr);grid.appendChild(card);
-  });
-}
-if (isConfigured) {
-  notasRef.on('value', function(snap) {
-    notas=[];snap.forEach(function(child){var v=child.val();v._key=child.key;notas.push(v);});
-    notas.sort(function(a,b){return b.ts-a.ts;});renderNotas();
-  });
-} else { renderNotas(); }
 setInterval(checkVanAlerts, 10000);
 setInterval(() => { if (vans.length) renderVans(); }, 30000); // refresh countdown every 30s
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
-window.addEventListener("load", function() { renderOrdens(); });
 if (!isConfigured) {
   renderOrdens();
   renderVans();
