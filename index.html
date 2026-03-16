@@ -324,7 +324,13 @@ if (isConfigured) {
 let ordens = [];
 let vans   = [];
 let extraHours = [];
-const seenNotifs = new Set(JSON.parse(localStorage.getItem('tms_seen_v3') || '[]'));
+// Apenas bloquear notificações antigas (> 5 min) para evitar mostrar no reload
+const rawSeen = JSON.parse(localStorage.getItem('tms_seen_v3') || '[]');
+const seenTimestamps = JSON.parse(localStorage.getItem('tms_seen_ts') || '{}');
+// Filtrar apenas IDs com menos de 5 minutos
+const agora = Date.now();
+const filteredSeen = rawSeen.filter(id => seenTimestamps[id] && (agora - seenTimestamps[id]) < 300000);
+const seenNotifs = new Set(filteredSeen);
 let toastQueue = [], vanToastQueue = [];
 const firedAlerts = new Set(JSON.parse(localStorage.getItem('tms_fired_v3') || '[]'));
 const FIXED_HOURS = ['06:30', '10:30', '14:30', '18:30', '22:30'];
@@ -383,9 +389,24 @@ function dismissAllToasts() {
 }
 
 function handleIncomingNotif(notif) {
+  // Se já está a ser mostrada no ecrã, ignorar
+  if (document.querySelector('[data-notif-id="' + notif.id + '"]')) return;
+  // Se já foi vista nesta sessão, ignorar
   if (seenNotifs.has(notif.id)) return;
+  // Se é muito antiga (> 5 min), ignorar silenciosamente
+  if (Date.now() - notif.ts > 300000) {
+    seenNotifs.add(notif.id);
+    seenTimestamps[notif.id] = Date.now() - 400000;
+    localStorage.setItem('tms_seen_v3', JSON.stringify([...seenNotifs].slice(-300)));
+    localStorage.setItem('tms_seen_ts', JSON.stringify(seenTimestamps));
+    return;
+  }
+
+  // Marcar como vista
   seenNotifs.add(notif.id);
+  seenTimestamps[notif.id] = Date.now();
   localStorage.setItem('tms_seen_v3', JSON.stringify([...seenNotifs].slice(-300)));
+  localStorage.setItem('tms_seen_ts', JSON.stringify(seenTimestamps));
 
   const isVan = notif.type === 'van';
   sendSystemNotif(
@@ -418,12 +439,14 @@ function pushNotif(type, message) {
   const notif = { id: type + '_' + Date.now() + '_' + Math.random().toString(36).slice(2), type, message, ts: Date.now() };
   if (isConfigured) {
     notifsRef.push(notif);
-    // Clean notifs older than 2 min
-    notifsRef.once('value', snap => {
-      snap.forEach(child => {
-        if (Date.now() - child.val().ts > 120000) child.ref.remove();
+    // Limpar notifs antigas com delay para não apagar as recém-inseridas
+    setTimeout(function() {
+      notifsRef.once('value', snap => {
+        snap.forEach(child => {
+          if (Date.now() - child.val().ts > 120000) child.ref.remove();
+        });
       });
-    });
+    }, 5000);
   } else {
     handleIncomingNotif(notif);
   }
@@ -507,53 +530,60 @@ function deleteOrdem(key) {
 
 function renderOrdens() {
   var PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
-  var CORES = {
-    'Eduardo': '#3b82f6',
-    'Fernando': '#f59e0b',
-    'Bruna': '#ec4899',
-    'Ilona': '#8b5cf6',
-    'Daniel': '#10b981'
-  };
+  var CORES = { 'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981' };
+
   var total = ordens.length;
   var countEl = document.getElementById('ordens-count');
   if (countEl) countEl.textContent = total + ' total';
 
   var grid = document.getElementById('perfis-grid');
   if (!grid) return;
-  while (grid.firstChild) grid.removeChild(grid.firstChild);
 
   PESSOAS.forEach(function(nome) {
     var cor = CORES[nome] || '#64748b';
     var ordensP = ordens.filter(function(o) { return o.pessoa === nome; });
 
-    // Card do perfil
-    var perfil = document.createElement('div');
-    perfil.style.cssText = 'flex:1;min-width:180px;max-width:240px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
+    // Usar id fixo por pessoa para actualizar em vez de recriar
+    var perfilId = 'perfil-' + nome.toLowerCase();
+    var perfil = document.getElementById(perfilId);
 
-    // Header do perfil
-    var header = document.createElement('div');
-    header.style.cssText = 'background:' + cor + '22;border-bottom:2px solid ' + cor + ';padding:14px 16px;display:flex;align-items:center;gap:10px;';
+    if (!perfil) {
+      // Criar o card do perfil pela primeira vez
+      perfil = document.createElement('div');
+      perfil.id = perfilId;
+      perfil.style.cssText = 'flex:1;min-width:180px;max-width:240px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
 
-    var avatar = document.createElement('div');
-    avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:' + cor + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white;flex-shrink:0;';
-    avatar.textContent = nome[0];
+      var header = document.createElement('div');
+      header.style.cssText = 'background:' + cor + '22;border-bottom:2px solid ' + cor + ';padding:14px 16px;display:flex;align-items:center;gap:10px;';
+      var avatar = document.createElement('div');
+      avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:' + cor + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white;flex-shrink:0;';
+      avatar.textContent = nome[0];
+      var nameDiv = document.createElement('div');
+      nameDiv.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;letter-spacing:1px;';
+      nameDiv.textContent = nome;
+      var badge = document.createElement('div');
+      badge.className = 'perfil-badge';
+      badge.style.cssText = 'margin-left:auto;background:' + cor + ';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;';
+      badge.textContent = ordensP.length;
+      header.appendChild(avatar);
+      header.appendChild(nameDiv);
+      header.appendChild(badge);
+      perfil.appendChild(header);
 
-    var nameDiv = document.createElement('div');
-    nameDiv.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;letter-spacing:1px;';
-    nameDiv.textContent = nome;
+      var lista = document.createElement('div');
+      lista.className = 'perfil-lista';
+      lista.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;';
+      perfil.appendChild(lista);
+      grid.appendChild(perfil);
+    } else {
+      // Actualizar apenas o badge
+      var badge = perfil.querySelector('.perfil-badge');
+      if (badge) badge.textContent = ordensP.length;
+    }
 
-    var badge = document.createElement('div');
-    badge.style.cssText = 'margin-left:auto;background:' + cor + ';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;';
-    badge.textContent = ordensP.length;
-
-    header.appendChild(avatar);
-    header.appendChild(nameDiv);
-    header.appendChild(badge);
-    perfil.appendChild(header);
-
-    // Lista de ordens desta pessoa
-    var lista = document.createElement('div');
-    lista.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;';
+    // Actualizar sempre a lista de ordens
+    var lista = perfil.querySelector('.perfil-lista');
+    while (lista.firstChild) lista.removeChild(lista.firstChild);
 
     if (!ordensP.length) {
       var vazio = document.createElement('div');
@@ -568,43 +598,23 @@ function renderOrdens() {
 
         var top = document.createElement('div');
         top.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
-
         var mat = document.createElement('span');
         mat.style.cssText = 'font-weight:700;color:#f1f5f9;font-size:13px;';
         mat.textContent = o.matricula || '—';
-
         var del = document.createElement('button');
         del.className = 'delete-btn';
         del.textContent = '✕';
         del.style.padding = '2px 6px';
         (function(k) { del.onclick = function() { deleteOrdem(k); }; })(key);
-
         top.appendChild(mat);
         top.appendChild(del);
         item.appendChild(top);
 
         var info = document.createElement('div');
         info.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
-        if (o.preco) {
-          var p = document.createElement('span');
-          p.className = 'badge badge-green';
-          p.style.fontSize = '10px';
-          p.textContent = '💶 ' + o.preco + '€';
-          info.appendChild(p);
-        }
-        if (o.custo) {
-          var c = document.createElement('span');
-          c.className = 'badge badge-amber';
-          c.style.fontSize = '10px';
-          c.textContent = '💰 ' + o.custo + '€';
-          info.appendChild(c);
-        }
-        if (o.ref) {
-          var r = document.createElement('span');
-          r.style.cssText = 'color:#94a3b8;font-size:10px;';
-          r.textContent = '📧 ' + o.ref;
-          info.appendChild(r);
-        }
+        if (o.preco) { var p = document.createElement('span'); p.className='badge badge-green'; p.style.fontSize='10px'; p.textContent='💶 '+o.preco+'€'; info.appendChild(p); }
+        if (o.custo) { var c = document.createElement('span'); c.className='badge badge-amber'; c.style.fontSize='10px'; c.textContent='💰 '+o.custo+'€'; info.appendChild(c); }
+        if (o.ref)   { var r = document.createElement('span'); r.style.cssText='color:#94a3b8;font-size:10px;'; r.textContent='📧 '+o.ref; info.appendChild(r); }
         item.appendChild(info);
 
         var ts = document.createElement('div');
@@ -615,9 +625,6 @@ function renderOrdens() {
         lista.appendChild(item);
       });
     }
-
-    perfil.appendChild(lista);
-    grid.appendChild(perfil);
   });
 }
 
