@@ -453,6 +453,9 @@ function pushNotif(type, message) {
 }
 
 // ─── FIREBASE LISTENERS ──────────────────────────────────────────────────────
+// Inicializar perfis sempre antes dos listeners
+initPerfis();
+
 if (isConfigured) {
   // Ordens
   ordensRef.on('value', snap => {
@@ -480,9 +483,6 @@ if (isConfigured) {
     extraHours.sort();
     renderExtraHours();
   });
-
-  // Init perfis
-  initPerfis();
 
   // Connection state
   db.ref('.info/connected').on('value', snap => {
