@@ -193,23 +193,23 @@
 
   <!-- ORDENS TAB -->
   <div id="tab-ordens" class="tab-content active">
-    <div>
+    <div style="grid-column:1/-1;">
       <div class="card">
         <div class="card-title">➕ Nova Ordem de Carga</div>
-        <div class="field"><label>Matrícula / Transportador</label><input id="f-matricula" placeholder="XX-00-XX / Nome"></div>
+        <div class="grid2">
+          <div class="field"><label>Matrícula / Transportador</label><input id="f-matricula" placeholder="XX-00-XX / Nome"></div>
+          <div class="field"><label>Pessoa a Enviar</label><input id="f-pessoa" placeholder="Nome da pessoa..."></div>
+        </div>
         <div class="grid2">
           <div class="field"><label>Preço (€)</label><input id="f-preco" type="number" step="0.01" placeholder="0.00"></div>
           <div class="field"><label>Custo (€)</label><input id="f-custo" type="number" step="0.01" placeholder="0.00"></div>
         </div>
         <div class="field"><label>Referência / E-mail (Horas)</label><input id="f-ref" placeholder="REF001 / email@... / 08:00h"></div>
-        <div class="field"><label>Pessoa a Enviar</label><input id="f-pessoa" placeholder="Nome da pessoa..."></div>
         <button class="btn btn-orange" id="btn-ordem" onclick="submitOrdem()">🚀 Inserir Ordem</button>
       </div>
-    </div>
-    <div>
       <div class="card">
         <div class="card-title">📋 Ordens Recentes <span class="count" id="ordens-count">0 total</span></div>
-        <div id="ordens-list" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px;margin-top:4px;"></div>
+        <div id="ordens-list" style="position:relative;min-height:100px;margin-top:16px;"></div>
       </div>
     </div>
   </div>
@@ -504,12 +504,21 @@ function renderOrdens() {
     e.style.fontSize = '13px';
     e.textContent = 'Nenhuma ordem inserida';
     list.appendChild(e);
+    list.style.minHeight = '80px';
     return;
   }
-  ordens.forEach(function(o) {
+  var STEP_X = 32; // deslocamento horizontal por card
+  var STEP_Y = 54; // deslocamento vertical por card
+  var CARD_W = 340;
+  var CARD_H = 130;
+  // altura total do container
+  list.style.minHeight = (CARD_H + STEP_Y * (ordens.length - 1) + 20) + 'px';
+  ordens.forEach(function(o, i) {
     var key = o._key || o.id;
     var card = document.createElement('div');
-    card.style.cssText = 'width:220px;min-width:220px;flex-shrink:0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;animation:fadeIn 0.3s ease;';
+    card.style.cssText = 'position:absolute;width:' + CARD_W + 'px;left:' + (i * STEP_X) + 'px;top:' + (i * STEP_Y) + 'px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;transition:transform 0.15s,box-shadow 0.15s;cursor:default;';
+    card.onmouseenter = function() { this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)'; this.style.zIndex='10'; };
+    card.onmouseleave = function() { this.style.transform=''; this.style.boxShadow=''; this.style.zIndex=''; };
 
     // Header: matrícula + pessoa
     var header = document.createElement('div');
@@ -553,7 +562,7 @@ function renderOrdens() {
 
     // Footer: hora + botão eliminar
     var footer = document.createElement('div');
-    footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:4px;';
+    footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:2px;';
     var time = document.createElement('span');
     time.style.cssText = 'color:#475569;font-size:11px;';
     time.textContent = formatTime(o.ts);
