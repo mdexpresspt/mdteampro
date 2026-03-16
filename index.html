@@ -199,7 +199,7 @@
         <div class="card-title">➕ Nova Ordem de Carga</div>
         <div class="grid2">
           <div class="field"><label>Matrícula / Transportador</label><input id="f-matricula" placeholder="XX-00-XX / Nome"></div>
-          <div class="field"><label>Pessoa a Enviar</label><select id="f-pessoa" style="font-family:'Rajdhani',sans-serif;width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;"><option value="">— Selecionar —</option><option>Eduardo</option><option>Fernando</option><option>Bruna</option><option>Ilona</option><option>Daniel</option></select></div>
+          <div class="field"><label>Pessoa a Enviar</label><select id="f-pessoa" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;font-family:'Rajdhani',sans-serif;"><option value="">— Selecionar —</option><option>Eduardo</option><option>Fernando</option><option>Bruna</option><option>Ilona</option><option>Daniel</option></select></div>
         </div>
         <div class="grid2">
           <div class="field"><label>Preço (€)</label><input id="f-preco" type="number" step="0.01" placeholder="0.00"></div>
@@ -278,18 +278,6 @@
         <button class="btn btn-orange" onclick="addNota()" style="width:auto;padding:11px 28px;">📌 Adicionar</button>
       </div>
       <div style="color:#475569;font-size:11px;margin-top:6px;">CTRL+ENTER para adicionar rapidamente</div>
-    </div>
-    <div id="notas-grid" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px;margin-top:4px;"></div>
-  </div>
-
-  <!-- NOTAS TAB -->
-  <div id="tab-notas" class="tab-content">
-    <div class="card" style="margin-bottom:16px;">
-      <div class="card-title">📝 Nova Nota <span class="count" id="notas-count">0 total</span></div>
-      <div style="display:flex;gap:12px;align-items:flex-end;">
-        <div class="field" style="margin:0;flex:1;"><textarea id="nota-input" placeholder="Escreve aqui a nota..." rows="2" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:14px;outline:none;resize:none;font-family:'Rajdhani',sans-serif;" onkeydown="if(event.ctrlKey&&event.key==='Enter')addNota()"></textarea></div>
-        <button class="btn btn-orange" onclick="addNota()" style="width:auto;padding:11px 28px;">📌 Adicionar</button>
-      </div>
     </div>
     <div id="notas-grid" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px;margin-top:4px;"></div>
   </div>
@@ -507,28 +495,27 @@ function deleteOrdem(key) {
   }
 }
 
-var PERFIL_PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
-var PERFIL_CORES = {'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981'};
-
 function renderOrdens() {
+  var PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
+  var CORES = {'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981'};
   var countEl = document.getElementById('ordens-count');
   if (countEl) countEl.textContent = ordens.length + ' total';
   var grid = document.getElementById('perfis-grid');
   if (!grid) return;
 
-  PERFIL_PESSOAS.forEach(function(nome) {
-    var cor = PERFIL_CORES[nome];
+  PESSOAS.forEach(function(nome) {
+    var cor = CORES[nome];
     var pid = 'perfil-' + nome.toLowerCase();
-    var perfil = document.getElementById(pid);
 
-    if (!perfil) {
-      perfil = document.createElement('div');
+    // Criar perfil se não existe ainda
+    if (!document.getElementById(pid)) {
+      var perfil = document.createElement('div');
       perfil.id = pid;
       perfil.style.cssText = 'flex:1;min-width:180px;max-width:220px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
       var hdr = document.createElement('div');
       hdr.style.cssText = 'background:'+cor+'22;border-bottom:2px solid '+cor+';padding:12px 14px;display:flex;align-items:center;gap:8px;';
       var av = document.createElement('div');
-      av.style.cssText = 'width:32px;height:32px;border-radius:50%;background:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:700;color:white;flex-shrink:0;font-size:15px;';
+      av.style.cssText = 'width:32px;height:32px;border-radius:50%;background:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:700;color:white;flex-shrink:0;';
       av.textContent = nome[0];
       var nm = document.createElement('div');
       nm.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;';
@@ -546,10 +533,10 @@ function renderOrdens() {
       grid.appendChild(perfil);
     }
 
+    // Actualizar badge e lista
     var badge = document.getElementById(pid+'-badge');
     var lista = document.getElementById(pid+'-lista');
     if (!badge || !lista) return;
-
     var ordensP = ordens.filter(function(o) { return o.pessoa === nome; });
     badge.textContent = ordensP.length;
     while (lista.firstChild) lista.removeChild(lista.firstChild);
@@ -582,10 +569,7 @@ function renderOrdens() {
         if(o.custo){var c=document.createElement('span');c.className='badge badge-amber';c.style.fontSize='10px';c.textContent='💰 '+o.custo+'€';info.appendChild(c);}
         if(o.ref){var r=document.createElement('span');r.style.cssText='color:#94a3b8;font-size:10px;';r.textContent='📧 '+o.ref;info.appendChild(r);}
         item.appendChild(info);
-        var ts=document.createElement('div');
-        ts.style.cssText='color:#475569;font-size:10px;margin-top:4px;';
-        ts.textContent=formatTime(o.ts);
-        item.appendChild(ts);
+        var ts=document.createElement('div');ts.style.cssText='color:#475569;font-size:10px;margin-top:4px;';ts.textContent=formatTime(o.ts);item.appendChild(ts);
         lista.appendChild(item);
       });
     }
@@ -922,11 +906,9 @@ function renderNotas() {
   var countEl = document.getElementById('notas-count');
   if (countEl) countEl.textContent = notas.length + ' total';
   while (grid.firstChild) grid.removeChild(grid.firstChild);
-  if (!notas.length) {
-    var e = document.createElement('div'); e.style.cssText='color:#64748b;padding:40px;font-size:13px;'; e.textContent='Nenhuma nota adicionada'; grid.appendChild(e); return;
-  }
+  if (!notas.length) { var e=document.createElement('div');e.style.cssText='color:#64748b;padding:40px;font-size:13px;';e.textContent='Nenhuma nota adicionada';grid.appendChild(e);return; }
   notas.forEach(function(n,i) {
-    var cor=n.cor||N_CORES[0], rot=N_ROTS[i%N_ROTS.length], key=n._key;
+    var cor=n.cor||N_CORES[0],rot=N_ROTS[i%N_ROTS.length],key=n._key;
     var d=new Date(n.ts).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     var card=document.createElement('div');
     card.style.width='200px';card.style.minWidth='200px';card.style.flexShrink='0';card.style.background=cor;card.style.borderRadius='4px 4px 4px 16px';card.style.padding='16px';card.style.boxShadow='3px 4px 12px rgba(0,0,0,0.45)';card.style.minHeight='120px';card.style.display='flex';card.style.flexDirection='column';card.style.justifyContent='space-between';card.style.transform='rotate('+rot+')';card.style.boxSizing='border-box';
@@ -940,13 +922,10 @@ function renderNotas() {
 }
 if (isConfigured) {
   notasRef.on('value', function(snap) {
-    notas = [];
-    snap.forEach(function(child){ var v=child.val(); v._key=child.key; notas.push(v); });
-    notas.sort(function(a,b){return b.ts-a.ts;});
-    renderNotas();
+    notas=[];snap.forEach(function(child){var v=child.val();v._key=child.key;notas.push(v);});
+    notas.sort(function(a,b){return b.ts-a.ts;});renderNotas();
   });
 } else { renderNotas(); }
-
 setInterval(checkVanAlerts, 10000);
 setInterval(() => { if (vans.length) renderVans(); }, 30000); // refresh countdown every 30s
 
