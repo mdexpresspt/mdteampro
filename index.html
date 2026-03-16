@@ -209,7 +209,7 @@
     <div>
       <div class="card">
         <div class="card-title">📋 Ordens Recentes <span class="count" id="ordens-count">0 total</span></div>
-        <div class="scroll-list" id="ordens-list"><div class="empty-state">A carregar...</div></div>
+        <div id="ordens-list" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px;margin-top:4px;"></div>
       </div>
     </div>
   </div>
@@ -494,30 +494,79 @@ function deleteOrdem(key) {
 }
 
 function renderOrdens() {
-  const list = document.getElementById('ordens-list');
+  var list = document.getElementById('ordens-list');
   document.getElementById('ordens-count').textContent = ordens.length + ' total';
-  if (!ordens.length) { list.innerHTML = '<div class="empty-state">Nenhuma ordem inserida</div>'; return; }
-  list.innerHTML = ordens.map(o => {
-    const key = o._key || o.id;
-    return `
-    <div class="ordem-item">
-      <div class="ordem-header">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          ${o.matricula ? `<span class="ordem-mat">${o.matricula}</span>` : ''}
-          ${o.pessoa    ? `<span class="badge badge-purple">👤 ${o.pessoa}</span>` : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span class="ordem-time">${formatTime(o.ts)}</span>
-          <button class="delete-btn" onclick="deleteOrdem('${key}')">✕ Eliminar</button>
-        </div>
-      </div>
-      <div class="ordem-badges">
-        ${o.preco ? `<span class="badge badge-green">💶 ${o.preco}€</span>` : ''}
-        ${o.custo ? `<span class="badge badge-amber">💰 ${o.custo}€</span>` : ''}
-        ${o.ref   ? `<span class="ordem-ref">📧 ${o.ref}</span>` : ''}
-      </div>
-    </div>`;
-  }).join('');
+  while (list.firstChild) list.removeChild(list.firstChild);
+  if (!ordens.length) {
+    var e = document.createElement('div');
+    e.style.color = '#64748b';
+    e.style.padding = '40px';
+    e.style.fontSize = '13px';
+    e.textContent = 'Nenhuma ordem inserida';
+    list.appendChild(e);
+    return;
+  }
+  ordens.forEach(function(o) {
+    var key = o._key || o.id;
+    var card = document.createElement('div');
+    card.style.cssText = 'width:220px;min-width:220px;flex-shrink:0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;animation:fadeIn 0.3s ease;';
+
+    // Header: matrícula + pessoa
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
+    if (o.matricula) {
+      var mat = document.createElement('span');
+      mat.style.cssText = 'color:#f1f5f9;font-weight:700;font-size:15px;';
+      mat.textContent = o.matricula;
+      header.appendChild(mat);
+    }
+    if (o.pessoa) {
+      var pessoa = document.createElement('span');
+      pessoa.className = 'badge badge-purple';
+      pessoa.textContent = '👤 ' + o.pessoa;
+      header.appendChild(pessoa);
+    }
+    card.appendChild(header);
+
+    // Badges: preço, custo, ref
+    var badges = document.createElement('div');
+    badges.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
+    if (o.preco) {
+      var p = document.createElement('span');
+      p.className = 'badge badge-green';
+      p.textContent = '💶 ' + o.preco + '€';
+      badges.appendChild(p);
+    }
+    if (o.custo) {
+      var c = document.createElement('span');
+      c.className = 'badge badge-amber';
+      c.textContent = '💰 ' + o.custo + '€';
+      badges.appendChild(c);
+    }
+    if (o.ref) {
+      var r = document.createElement('span');
+      r.style.cssText = 'color:#94a3b8;font-size:12px;';
+      r.textContent = '📧 ' + o.ref;
+      badges.appendChild(r);
+    }
+    card.appendChild(badges);
+
+    // Footer: hora + botão eliminar
+    var footer = document.createElement('div');
+    footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:4px;';
+    var time = document.createElement('span');
+    time.style.cssText = 'color:#475569;font-size:11px;';
+    time.textContent = formatTime(o.ts);
+    var btn = document.createElement('button');
+    btn.className = 'delete-btn';
+    btn.textContent = '✕ Eliminar';
+    (function(k) { btn.onclick = function() { deleteOrdem(k); }; })(key);
+    footer.appendChild(time);
+    footer.appendChild(btn);
+    card.appendChild(footer);
+
+    list.appendChild(card);
+  });
 }
 
 // ─── VANS ────────────────────────────────────────────────────────────────────
