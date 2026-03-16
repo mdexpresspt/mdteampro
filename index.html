@@ -141,17 +141,17 @@
 
   .scroll-list { max-height: 500px; overflow-y: auto; }
 
-  #overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.45); }
-  #overlay.show { display: flex; align-items: center; justify-content: center; }
-
-  .toast-box { border-radius: 16px; padding: 32px 40px; max-width: 480px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.8); text-align: center; animation: popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275); }
-  .toast-box.ordem { background: linear-gradient(135deg, #FF6B00, #FF9500); box-shadow: 0 0 80px rgba(255,107,0,0.6), 0 20px 60px rgba(0,0,0,0.8); border: 2px solid rgba(255,200,100,0.5); }
-  .toast-box.van   { background: linear-gradient(135deg, #1a3a6b, #2563EB); box-shadow: 0 0 80px rgba(37,99,235,0.6), 0 20px 60px rgba(0,0,0,0.8); border: 2px solid rgba(100,160,255,0.5); }
-  .toast-icon  { font-size: 48px; margin-bottom: 8px; }
-  .toast-title { color: white; font-size: 22px; font-weight: 900; margin-bottom: 12px; font-family: 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
-  .toast-msg   { color: rgba(255,255,255,0.9); font-size: 15px; margin-bottom: 20px; font-family: monospace; }
-  .toast-close { background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.5); color: white; padding: 10px 32px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 1px; font-family: 'Rajdhani', sans-serif; }
-  .toast-more  { color: rgba(255,255,255,0.6); margin-top: 10px; font-size: 12px; }
+  #overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.6); overflow-y: auto; }
+  #overlay.show { display: flex; align-items: flex-start; justify-content: center; padding: 40px 20px; }
+  #toast-container { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 520px; }
+  .toast-box { border-radius: 16px; padding: 24px 28px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.8); text-align: center; animation: popIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275); }
+  .toast-box.ordem { background: linear-gradient(135deg, #FF6B00, #FF9500); box-shadow: 0 0 60px rgba(255,107,0,0.5); border: 2px solid rgba(255,200,100,0.5); }
+  .toast-box.van   { background: linear-gradient(135deg, #1a3a6b, #2563EB); box-shadow: 0 0 60px rgba(37,99,235,0.5); border: 2px solid rgba(100,160,255,0.5); }
+  .toast-icon  { font-size: 36px; margin-bottom: 6px; }
+  .toast-title { color: white; font-size: 18px; font-weight: 900; margin-bottom: 8px; font-family: 'Oswald', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+  .toast-msg   { color: rgba(255,255,255,0.9); font-size: 14px; margin-bottom: 16px; font-family: monospace; }
+  .toast-close { background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.5); color: white; padding: 8px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 1px; font-family: 'Rajdhani', sans-serif; }
+  #toast-close-all { background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4); color: white; padding: 10px 32px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 1px; font-family: 'Rajdhani', sans-serif; width: 100%; margin-top: 4px; }
 
   #tab-notas.active { display: block !important; }
   @media (max-width: 700px) {
@@ -293,13 +293,9 @@
 </div>
 
 <!-- OVERLAY / TOAST -->
-<div id="overlay" onclick="dismissToast()">
-  <div id="toast-box" class="toast-box ordem">
-    <div class="toast-icon"  id="toast-icon">🚚</div>
-    <div class="toast-title" id="toast-title">NOVA ORDEM DE CARGA</div>
-    <div class="toast-msg"   id="toast-msg"></div>
-    <button class="toast-close" onclick="dismissToast()">FECHAR</button>
-    <div class="toast-more"  id="toast-more"></div>
+<div id="overlay">
+  <div id="toast-container">
+    <button id="toast-close-all" onclick="dismissAllToasts()">✕ FECHAR TUDO</button>
   </div>
 </div>
 
@@ -355,22 +351,35 @@ function minutesAgo(ts) { return Math.floor((Date.now() - ts) / 60000); }
 // ─── TOAST ───────────────────────────────────────────────────────────────────
 function showToast(notif) {
   const isVan = notif.type === 'van';
-  const box = document.getElementById('toast-box');
+  const container = document.getElementById('toast-container');
+  const closeAll = document.getElementById('toast-close-all');
+
+  const box = document.createElement('div');
   box.className = 'toast-box ' + (isVan ? 'van' : 'ordem');
-  document.getElementById('toast-icon').textContent  = isVan ? '🚐' : '🚚';
-  document.getElementById('toast-title').textContent = isVan ? 'UPDATE DE CARRINHA' : 'NOVA ORDEM DE CARGA';
-  document.getElementById('toast-msg').textContent   = notif.message;
-  const remaining = (isVan ? vanToastQueue : toastQueue).length;
-  document.getElementById('toast-more').textContent  = remaining > 0 ? `+${remaining} mais notificações` : '';
+  box.setAttribute('data-notif-id', notif.id);
+  box.innerHTML = `
+    <div class="toast-icon">${isVan ? '🚐' : '🚚'}</div>
+    <div class="toast-title">${isVan ? 'UPDATE DE CARRINHA' : 'NOVA ORDEM DE CARGA'}</div>
+    <div class="toast-msg">${notif.message}</div>
+    <button class="toast-close" onclick="dismissToast('${notif.id}')">FECHAR</button>`;
+
+  // Inserir antes do botão "fechar tudo"
+  container.insertBefore(box, closeAll);
   document.getElementById('overlay').classList.add('show');
 }
 
-function dismissToast() {
+function dismissToast(id) {
+  const box = document.querySelector('[data-notif-id="' + id + '"]');
+  if (box) box.remove();
+  const container = document.getElementById('toast-container');
+  const remaining = container.querySelectorAll('.toast-box').length;
+  if (remaining === 0) document.getElementById('overlay').classList.remove('show');
+}
+
+function dismissAllToasts() {
+  const container = document.getElementById('toast-container');
+  container.querySelectorAll('.toast-box').forEach(function(b) { b.remove(); });
   document.getElementById('overlay').classList.remove('show');
-  setTimeout(() => {
-    if (toastQueue.length > 0) showToast(toastQueue.shift());
-    else if (vanToastQueue.length > 0) showToast(vanToastQueue.shift());
-  }, 200);
 }
 
 function handleIncomingNotif(notif) {
@@ -378,19 +387,13 @@ function handleIncomingNotif(notif) {
   seenNotifs.add(notif.id);
   localStorage.setItem('tms_seen_v3', JSON.stringify([...seenNotifs].slice(-300)));
 
-  // System OS notification (shows even if on another tab/window)
   const isVan = notif.type === 'van';
   sendSystemNotif(
     isVan ? '🚐 Update de Carrinha — TMS' : '🚚 Nova Ordem de Carga — TMS',
     notif.message
   );
 
-  if (notif.type === 'van') vanToastQueue.push(notif);
-  else toastQueue.push(notif);
-  if (!document.getElementById('overlay').classList.contains('show')) {
-    if (toastQueue.length > 0) showToast(toastQueue.shift());
-    else if (vanToastQueue.length > 0) showToast(vanToastQueue.shift());
-  }
+  showToast(notif);
 }
 
 // ─── SYSTEM NOTIFICATIONS ────────────────────────────────────────────────────
