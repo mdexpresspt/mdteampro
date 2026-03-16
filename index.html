@@ -198,7 +198,16 @@
         <div class="card-title">➕ Nova Ordem de Carga</div>
         <div class="grid2">
           <div class="field"><label>Matrícula / Transportador</label><input id="f-matricula" placeholder="XX-00-XX / Nome"></div>
-          <div class="field"><label>Pessoa a Enviar</label><input id="f-pessoa" placeholder="Nome da pessoa..."></div>
+          <div class="field"><label>Pessoa a Enviar</label>
+        <select id="f-pessoa">
+          <option value="">— Selecionar —</option>
+          <option value="Eduardo">Eduardo</option>
+          <option value="Fernando">Fernando</option>
+          <option value="Bruna">Bruna</option>
+          <option value="Ilona">Ilona</option>
+          <option value="Daniel">Daniel</option>
+        </select>
+      </div>
         </div>
         <div class="grid2">
           <div class="field"><label>Preço (€)</label><input id="f-preco" type="number" step="0.01" placeholder="0.00"></div>
@@ -207,9 +216,9 @@
         <div class="field"><label>Referência / E-mail (Horas)</label><input id="f-ref" placeholder="REF001 / email@... / 08:00h"></div>
         <button class="btn btn-orange" id="btn-ordem" onclick="submitOrdem()">🚀 Inserir Ordem</button>
       </div>
-      <div style="padding: 0 4px;">
-        <div class="card-title" style="margin-bottom:12px;">📋 Ordens Recentes <span class="count" id="ordens-count">0 total</span></div>
-        <div id="ordens-list" style="display:flex;flex-direction:column;gap:0;"></div>
+      <div style="margin-top:8px;">
+        <div class="card-title" style="margin-bottom:16px;">👥 Ordens por Pessoa <span class="count" id="ordens-count">0 total</span></div>
+        <div id="perfis-grid" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px;"></div>
       </div>
     </div>
   </div>
@@ -494,73 +503,118 @@ function deleteOrdem(key) {
 }
 
 function renderOrdens() {
-  var list = document.getElementById('ordens-list');
-  document.getElementById('ordens-count').textContent = ordens.length + ' total';
-  while (list.firstChild) list.removeChild(list.firstChild);
-  if (!ordens.length) {
-    var e = document.createElement('div');
-    e.style.cssText = 'color:#64748b;padding:40px;font-size:13px;';
-    e.textContent = 'Nenhuma ordem inserida';
-    list.appendChild(e);
-    return;
-  }
-  ordens.forEach(function(o, i) {
-    var key = o._key || o.id;
-    var card = document.createElement('div');
-    card.style.cssText = 'width:380px;max-width:100%;margin-left:' + (i * 28) + 'px;margin-bottom:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;';
+  var PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
+  var CORES = {
+    'Eduardo': '#3b82f6',
+    'Fernando': '#f59e0b',
+    'Bruna': '#ec4899',
+    'Ilona': '#8b5cf6',
+    'Daniel': '#10b981'
+  };
+  var total = ordens.length;
+  var countEl = document.getElementById('ordens-count');
+  if (countEl) countEl.textContent = total + ' total';
 
+  var grid = document.getElementById('perfis-grid');
+  if (!grid) return;
+  while (grid.firstChild) grid.removeChild(grid.firstChild);
+
+  PESSOAS.forEach(function(nome) {
+    var cor = CORES[nome] || '#64748b';
+    var ordensP = ordens.filter(function(o) { return o.pessoa === nome; });
+
+    // Card do perfil
+    var perfil = document.createElement('div');
+    perfil.style.cssText = 'flex:1;min-width:180px;max-width:240px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
+
+    // Header do perfil
     var header = document.createElement('div');
-    header.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
-    if (o.matricula) {
-      var mat = document.createElement('span');
-      mat.style.cssText = 'color:#f1f5f9;font-weight:700;font-size:15px;';
-      mat.textContent = o.matricula;
-      header.appendChild(mat);
-    }
-    if (o.pessoa) {
-      var pessoa = document.createElement('span');
-      pessoa.className = 'badge badge-purple';
-      pessoa.textContent = '👤 ' + o.pessoa;
-      header.appendChild(pessoa);
-    }
-    card.appendChild(header);
+    header.style.cssText = 'background:' + cor + '22;border-bottom:2px solid ' + cor + ';padding:14px 16px;display:flex;align-items:center;gap:10px;';
 
-    var badges = document.createElement('div');
-    badges.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
-    if (o.preco) {
-      var p = document.createElement('span');
-      p.className = 'badge badge-green';
-      p.textContent = '💶 ' + o.preco + '€';
-      badges.appendChild(p);
-    }
-    if (o.custo) {
-      var c = document.createElement('span');
-      c.className = 'badge badge-amber';
-      c.textContent = '💰 ' + o.custo + '€';
-      badges.appendChild(c);
-    }
-    if (o.ref) {
-      var r = document.createElement('span');
-      r.style.cssText = 'color:#94a3b8;font-size:12px;';
-      r.textContent = '📧 ' + o.ref;
-      badges.appendChild(r);
-    }
-    card.appendChild(badges);
+    var avatar = document.createElement('div');
+    avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:' + cor + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white;flex-shrink:0;';
+    avatar.textContent = nome[0];
 
-    var footer = document.createElement('div');
-    footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:2px;';
-    var time = document.createElement('span');
-    time.style.cssText = 'color:#475569;font-size:11px;';
-    time.textContent = formatTime(o.ts);
-    var btn = document.createElement('button');
-    btn.className = 'delete-btn';
-    btn.textContent = '✕ Eliminar';
-    (function(k) { btn.onclick = function() { deleteOrdem(k); }; })(key);
-    footer.appendChild(time);
-    footer.appendChild(btn);
-    card.appendChild(footer);
+    var nameDiv = document.createElement('div');
+    nameDiv.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;letter-spacing:1px;';
+    nameDiv.textContent = nome;
 
-    list.appendChild(card);
+    var badge = document.createElement('div');
+    badge.style.cssText = 'margin-left:auto;background:' + cor + ';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;';
+    badge.textContent = ordensP.length;
+
+    header.appendChild(avatar);
+    header.appendChild(nameDiv);
+    header.appendChild(badge);
+    perfil.appendChild(header);
+
+    // Lista de ordens desta pessoa
+    var lista = document.createElement('div');
+    lista.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;';
+
+    if (!ordensP.length) {
+      var vazio = document.createElement('div');
+      vazio.style.cssText = 'color:#475569;font-size:11px;text-align:center;padding:12px 0;';
+      vazio.textContent = 'Sem ordens';
+      lista.appendChild(vazio);
+    } else {
+      ordensP.forEach(function(o) {
+        var key = o._key || o.id;
+        var item = document.createElement('div');
+        item.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;font-size:12px;';
+
+        var top = document.createElement('div');
+        top.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
+
+        var mat = document.createElement('span');
+        mat.style.cssText = 'font-weight:700;color:#f1f5f9;font-size:13px;';
+        mat.textContent = o.matricula || '—';
+
+        var del = document.createElement('button');
+        del.className = 'delete-btn';
+        del.textContent = '✕';
+        del.style.padding = '2px 6px';
+        (function(k) { del.onclick = function() { deleteOrdem(k); }; })(key);
+
+        top.appendChild(mat);
+        top.appendChild(del);
+        item.appendChild(top);
+
+        var info = document.createElement('div');
+        info.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
+        if (o.preco) {
+          var p = document.createElement('span');
+          p.className = 'badge badge-green';
+          p.style.fontSize = '10px';
+          p.textContent = '💶 ' + o.preco + '€';
+          info.appendChild(p);
+        }
+        if (o.custo) {
+          var c = document.createElement('span');
+          c.className = 'badge badge-amber';
+          c.style.fontSize = '10px';
+          c.textContent = '💰 ' + o.custo + '€';
+          info.appendChild(c);
+        }
+        if (o.ref) {
+          var r = document.createElement('span');
+          r.style.cssText = 'color:#94a3b8;font-size:10px;';
+          r.textContent = '📧 ' + o.ref;
+          info.appendChild(r);
+        }
+        item.appendChild(info);
+
+        var ts = document.createElement('div');
+        ts.style.cssText = 'color:#475569;font-size:10px;margin-top:4px;';
+        ts.textContent = formatTime(o.ts);
+        item.appendChild(ts);
+
+        lista.appendChild(item);
+      });
+    }
+
+    perfil.appendChild(lista);
+    grid.appendChild(perfil);
   });
 }
 
