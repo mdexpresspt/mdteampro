@@ -533,72 +533,29 @@ function deleteOrdem(key) {
 
 function renderOrdens() {
   var PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
-  var CORES = { 'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981' };
-
   var total = ordens.length;
   var countEl = document.getElementById('ordens-count');
   if (countEl) countEl.textContent = total + ' total';
 
-  var grid = document.getElementById('perfis-grid');
-  if (!grid) return;
-
   PESSOAS.forEach(function(nome) {
-    var cor = CORES[nome] || '#64748b';
-    var ordensP = ordens.filter(function(o) { return o.pessoa === nome; });
-
-    // Usar id fixo por pessoa para actualizar em vez de recriar
-    var perfilId = 'perfil-' + nome.toLowerCase();
-    var perfil = document.getElementById(perfilId);
-
-    if (!perfil) {
-      // Criar o card do perfil pela primeira vez
-      perfil = document.createElement('div');
-      perfil.id = perfilId;
-      perfil.style.cssText = 'flex:1;min-width:180px;max-width:240px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
-
-      var header = document.createElement('div');
-      header.style.cssText = 'background:' + cor + '22;border-bottom:2px solid ' + cor + ';padding:14px 16px;display:flex;align-items:center;gap:10px;';
-      var avatar = document.createElement('div');
-      avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:' + cor + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white;flex-shrink:0;';
-      avatar.textContent = nome[0];
-      var nameDiv = document.createElement('div');
-      nameDiv.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;letter-spacing:1px;';
-      nameDiv.textContent = nome;
-      var badge = document.createElement('div');
-      badge.className = 'perfil-badge';
-      badge.style.cssText = 'margin-left:auto;background:' + cor + ';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;';
-      badge.textContent = ordensP.length;
-      header.appendChild(avatar);
-      header.appendChild(nameDiv);
-      header.appendChild(badge);
-      perfil.appendChild(header);
-
-      var lista = document.createElement('div');
-      lista.className = 'perfil-lista';
-      lista.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;';
-      perfil.appendChild(lista);
-      grid.appendChild(perfil);
-    } else {
-      // Actualizar apenas o badge
-      var badge = perfil.querySelector('.perfil-badge');
-      if (badge) badge.textContent = ordensP.length;
-    }
-
-    // Actualizar sempre a lista de ordens
+    var perfil = document.getElementById('perfil-' + nome.toLowerCase());
+    if (!perfil) return;
+    var badge = perfil.querySelector('.perfil-badge');
     var lista = perfil.querySelector('.perfil-lista');
+    if (!lista) return;
+    var ordensP = ordens.filter(function(o) { return o.pessoa === nome; });
+    if (badge) badge.textContent = ordensP.length;
     while (lista.firstChild) lista.removeChild(lista.firstChild);
-
     if (!ordensP.length) {
-      var vazio = document.createElement('div');
-      vazio.style.cssText = 'color:#475569;font-size:11px;text-align:center;padding:12px 0;';
-      vazio.textContent = 'Sem ordens';
-      lista.appendChild(vazio);
+      var v = document.createElement('div');
+      v.style.cssText = 'color:#475569;font-size:11px;text-align:center;padding:12px 0;';
+      v.textContent = 'Sem ordens';
+      lista.appendChild(v);
     } else {
       ordensP.forEach(function(o) {
         var key = o._key || o.id;
         var item = document.createElement('div');
         item.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;font-size:12px;';
-
         var top = document.createElement('div');
         top.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
         var mat = document.createElement('span');
@@ -609,22 +566,18 @@ function renderOrdens() {
         del.textContent = '✕';
         del.style.padding = '2px 6px';
         (function(k) { del.onclick = function() { deleteOrdem(k); }; })(key);
-        top.appendChild(mat);
-        top.appendChild(del);
+        top.appendChild(mat); top.appendChild(del);
         item.appendChild(top);
-
         var info = document.createElement('div');
         info.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
         if (o.preco) { var p = document.createElement('span'); p.className='badge badge-green'; p.style.fontSize='10px'; p.textContent='💶 '+o.preco+'€'; info.appendChild(p); }
         if (o.custo) { var c = document.createElement('span'); c.className='badge badge-amber'; c.style.fontSize='10px'; c.textContent='💰 '+o.custo+'€'; info.appendChild(c); }
         if (o.ref)   { var r = document.createElement('span'); r.style.cssText='color:#94a3b8;font-size:10px;'; r.textContent='📧 '+o.ref; info.appendChild(r); }
         item.appendChild(info);
-
         var ts = document.createElement('div');
         ts.style.cssText = 'color:#475569;font-size:10px;margin-top:4px;';
         ts.textContent = formatTime(o.ts);
         item.appendChild(ts);
-
         lista.appendChild(item);
       });
     }
@@ -941,32 +894,30 @@ if (isConfigured) {
 // ─── INIT PERFIS ─────────────────────────────────────────────────────────────
 function initPerfis() {
   var PESSOAS = ['Eduardo','Fernando','Bruna','Ilona','Daniel'];
-  var CORES = { 'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981' };
+  var CORES = {'Eduardo':'#3b82f6','Fernando':'#f59e0b','Bruna':'#ec4899','Ilona':'#8b5cf6','Daniel':'#10b981'};
   var grid = document.getElementById('perfis-grid');
   if (!grid) return;
+  // Limpar grid antes de criar
+  while (grid.firstChild) grid.removeChild(grid.firstChild);
   PESSOAS.forEach(function(nome) {
     var cor = CORES[nome];
     var perfil = document.createElement('div');
     perfil.id = 'perfil-' + nome.toLowerCase();
     perfil.style.cssText = 'flex:1;min-width:180px;max-width:240px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;';
-
     var header = document.createElement('div');
-    header.style.cssText = 'background:' + cor + '22;border-bottom:2px solid ' + cor + ';padding:14px 16px;display:flex;align-items:center;gap:10px;';
-    var avatar = document.createElement('div');
-    avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:' + cor + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white;flex-shrink:0;';
-    avatar.textContent = nome[0];
-    var nameDiv = document.createElement('div');
-    nameDiv.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;letter-spacing:1px;';
-    nameDiv.textContent = nome;
-    var badge = document.createElement('div');
-    badge.className = 'perfil-badge';
-    badge.style.cssText = 'margin-left:auto;background:' + cor + ';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;';
-    badge.textContent = '0';
-    header.appendChild(avatar);
-    header.appendChild(nameDiv);
-    header.appendChild(badge);
+    header.style.cssText = 'background:'+cor+'22;border-bottom:2px solid '+cor+';padding:12px 14px;display:flex;align-items:center;gap:8px;';
+    var av = document.createElement('div');
+    av.style.cssText = 'width:32px;height:32px;border-radius:50%;background:'+cor+';display:flex;align-items:center;justify-content:center;font-weight:700;color:white;flex-shrink:0;';
+    av.textContent = nome[0];
+    var nd = document.createElement('div');
+    nd.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;letter-spacing:1px;';
+    nd.textContent = nome;
+    var bg = document.createElement('div');
+    bg.className = 'perfil-badge';
+    bg.style.cssText = 'margin-left:auto;background:'+cor+';color:white;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;';
+    bg.textContent = '0';
+    header.appendChild(av); header.appendChild(nd); header.appendChild(bg);
     perfil.appendChild(header);
-
     var lista = document.createElement('div');
     lista.className = 'perfil-lista';
     lista.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;';
