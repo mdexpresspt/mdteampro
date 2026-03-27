@@ -155,21 +155,21 @@ main{padding:24px;max-width:1400px;margin:0 auto;}
 .btn-del:hover{border-color:var(--red);color:var(--red);}
 
 /* TEAM MAP */
-.team-map-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
-@media(max-width:1100px){.team-map-grid{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:760px){.team-map-grid{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:480px){.team-map-grid{grid-template-columns:1fr;}}
-.tm-block{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);}
-.tm-month-title{font-size:.78rem;font-weight:800;text-align:center;margin-bottom:7px;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;}
-.tm-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;}
-.tm-dn{text-align:center;font-size:.55rem;color:var(--muted2);padding:2px 0;font-weight:700;text-transform:uppercase;}
-.tm-d{width:100%;aspect-ratio:1;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.58rem;font-weight:600;color:var(--muted2);position:relative;}
-.tm-d.wk{background:#f9fafb;}
-.tm-d.hol{background:var(--red-bg);color:var(--red);font-size:.48rem;}
-.tm-d.today-ring{outline:2px solid var(--accent2);outline-offset:1px;}
-.tm-d .dot-row{display:flex;justify-content:center;gap:1px;flex-wrap:wrap;max-width:100%;}
-.tm-d .pdot{width:4px;height:4px;border-radius:50%;flex-shrink:0;}
-.tm-d .wdot{width:4px;height:4px;border-radius:1px;flex-shrink:0;}/* square = work day */
+.team-map-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media(max-width:1000px){.team-map-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.team-map-grid{grid-template-columns:1fr;}}
+.tm-block{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow);}
+.tm-month-title{font-size:.82rem;font-weight:800;text-align:center;margin-bottom:10px;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;}
+.tm-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.tm-dn{text-align:center;font-size:.6rem;color:var(--muted2);padding:3px 0;font-weight:700;text-transform:uppercase;}
+.tm-d{width:100%;border-radius:4px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;position:relative;overflow:hidden;min-height:28px;background:#fff;border:1px solid #f0f2f7;}
+.tm-d-num{font-size:.6rem;font-weight:700;color:var(--muted);text-align:center;padding:2px 0 1px;line-height:1;}
+.tm-d.wk{background:#f8f9fb;}.tm-d.wk .tm-d-num{color:var(--muted2);}
+.tm-d.hol{background:#fff1f2;border-color:#fecaca;}.tm-d.hol .tm-d-num{color:var(--red);}
+.tm-d.today-ring{outline:2px solid var(--accent2);outline-offset:1px;z-index:1;}
+.tm-bars{display:flex;flex-direction:column;gap:1px;padding:0 1px 2px;}
+.tm-bar{height:5px;border-radius:2px;width:100%;}
+.tm-bar.work-bar{opacity:.75;background-image:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(255,255,255,.5) 2px,rgba(255,255,255,.5) 4px);}
 
 .empty{text-align:center;padding:36px;color:var(--muted);}.empty .ei{font-size:2rem;margin-bottom:8px;}
 .toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:1.5px solid var(--border);border-radius:11px;padding:11px 16px;font-size:.86rem;box-shadow:var(--shadow-md);transform:translateY(60px);opacity:0;transition:all .3s;z-index:999;max-width:300px;color:var(--text);}
@@ -240,11 +240,23 @@ main{padding:24px;max-width:1400px;margin:0 auto;}
       <div class="card">
         <h2>Mapa Geral de Férias — 2026</h2>
         <div id="team-map-container"></div>
-        <div class="legend" style="margin-top:16px">
-          <div class="li"><div class="ld" style="background:var(--red-bg);border:1px solid #fca5a5"></div>Feriado 🇵🇹</div>
-          <div class="li"><div class="ld" style="background:#f9fafb;border:1px solid var(--border)"></div>Fim-de-semana</div>
-          <div style="font-size:.75rem;color:var(--muted);font-weight:500">● Férias &nbsp; ■ Trabalho (FDS/feriado)</div>
-          <div id="team-legend" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+        <div class="legend" style="margin-top:20px;align-items:flex-start;gap:20px;">
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+            <div class="li"><div class="ld" style="background:#fff1f2;border:1px solid #fecaca"></div>Feriado 🇵🇹</div>
+            <div class="li"><div class="ld" style="background:#f8f9fb;border:1px solid #e5e7eb"></div>Fim-de-semana</div>
+            <div class="li">
+              <div style="width:28px;height:8px;border-radius:3px;background:linear-gradient(90deg,#2563eb,#7c3aed)"></div>
+              Barra colorida = pessoa de férias
+            </div>
+            <div class="li">
+              <div style="width:28px;height:8px;border-radius:3px;background:repeating-linear-gradient(45deg,#0891b2,#0891b2 3px,rgba(255,255,255,.5) 3px,rgba(255,255,255,.5) 6px)"></div>
+              Barra riscada = a trabalhar (FDS/feriado)
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px">
+            <span style="font-size:.76rem;color:var(--muted);font-weight:600">Pessoas:</span>
+            <div id="team-legend" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -586,10 +598,13 @@ function renderMapa(){
   const todayStr=ds(today.getFullYear(),today.getMonth(),today.getDate());
   const userIds=Object.keys(USERS);
 
-  // legend
+  // legend — colored pill per person
   const leg=document.getElementById('team-legend');
   if(leg)leg.innerHTML=userIds.map(uid=>`
-    <div class="li"><div style="width:10px;height:10px;border-radius:50%;background:${colorOf(uid)};flex-shrink:0"></div>${nameOf(uid)}</div>`).join('');
+    <div class="li">
+      <div style="width:14px;height:14px;border-radius:4px;background:${colorOf(uid)};flex-shrink:0"></div>
+      <span style="font-weight:600;color:var(--text)">${nameOf(uid)}</span>
+    </div>`).join('');
 
   let html='<div class="team-map-grid">';
   for(let m=0;m<12;m++){
@@ -598,23 +613,38 @@ function renderMapa(){
     html+=`<div class="tm-block"><div class="tm-month-title">${MONTHS[m]}</div><div class="tm-grid">`;
     DNAMES.forEach(n=>{html+=`<div class="tm-dn">${n}</div>`;});
     for(let i=0;i<first;i++)html+=`<div></div>`;
+
     for(let d=1;d<=dim;d++){
       const dayStr=ds(2026,m,d),dw=new Date(2026,m,d).getDay();
       const isToday=dayStr===todayStr,isH=isFer(dayStr),isWk=dw===0||dw===6;
+
       const onVac=userIds.filter(uid=>allPeriods.some(p=>p.userId===uid&&p.type!=='work'&&dayStr>=p.startDate&&dayStr<=p.endDate));
       const onWork=userIds.filter(uid=>allPeriods.some(p=>p.userId===uid&&p.type==='work'&&dayStr>=p.startDate&&dayStr<=p.endDate));
+
       let cls='tm-d';
       if(isH)cls+=' hol';
       else if(isWk)cls+=' wk';
       if(isToday)cls+=' today-ring';
-      let inner=`<span>${d}</span>`;
-      if(onVac.length||onWork.length){
-        const vacDots=onVac.map(uid=>`<div class="pdot" style="background:${colorOf(uid)}" title="${nameOf(uid)}: férias"></div>`).join('');
-        const wrkDots=onWork.map(uid=>`<div class="wdot" style="background:${colorOf(uid)}" title="${nameOf(uid)}: a trabalhar"></div>`).join('');
-        inner=`<span style="font-size:.5rem">${d}</span><div class="dot-row">${vacDots}${wrkDots}</div>`;
-      }
-      const tip=isH?ferN(dayStr):[...onVac.map(u=>nameOf(u)+' 🌴'),...onWork.map(u=>nameOf(u)+' 💼')].join(', ');
-      html+=`<div class="${cls}"${tip?` title="${tip}"`:''}>${inner}</div>`;
+
+      const tip=[
+        isH?'🇵🇹 '+ferN(dayStr):'',
+        ...onVac.map(u=>`${nameOf(u)} 🌴`),
+        ...onWork.map(u=>`${nameOf(u)} 💼`)
+      ].filter(Boolean).join(' · ');
+
+      // build bars for each person on vacation or working
+      let bars='';
+      onVac.forEach(uid=>{
+        bars+=`<div class="tm-bar" style="background:${colorOf(uid)}" title="${nameOf(uid)}: férias"></div>`;
+      });
+      onWork.forEach(uid=>{
+        bars+=`<div class="tm-bar work-bar" style="background:${colorOf(uid)}" title="${nameOf(uid)}: a trabalhar"></div>`;
+      });
+
+      html+=`<div class="${cls}"${tip?` title="${tip}"`:''}>`
+        +`<div class="tm-d-num">${d}</div>`
+        +(bars?`<div class="tm-bars">${bars}</div>`:'')
+        +`</div>`;
     }
     html+=`</div></div>`;
   }
