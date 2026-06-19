@@ -692,13 +692,27 @@ function submitOrdem() {
 function deleteOrdem(key) {
   const ordem = ordens.find(o => (o._key || String(o.id)) === key);
   if (isConfigured) {
-    // Marcar no histórico como eliminada
-    historicoRef.child(key).update({ estado: 'eliminada', eliminadaTs: Date.now() });
-    ordensRef.child(key).remove();
+    // Ler os dados da ordem ANTES de apagar, para guardar no histórico mesmo que não existisse lá
+    ordensRef.child(key).once('value', snap => {
+      const data = snap.val();
+      if (data) {
+        historicoRef.child(key).set({
+          ...data,
+          _firebaseKey: key,
+          estado: 'eliminada',
+          eliminadaTs: Date.now()
+        });
+      }
+      ordensRef.child(key).remove();
+    });
   } else {
     if (ordem) {
       const idx = historico.findIndex(h => (h._key || String(h.id)) === key);
-      if (idx >= 0) historico[idx] = { ...historico[idx], estado: 'eliminada', eliminadaTs: Date.now() };
+      if (idx >= 0) {
+        historico[idx] = { ...historico[idx], estado: 'eliminada', eliminadaTs: Date.now() };
+      } else {
+        historico.unshift({ ...ordem, estado: 'eliminada', eliminadaTs: Date.now() });
+      }
     }
     ordens = ordens.filter(o => String(o.id) !== String(key) && o._key !== key);
     renderOrdens();
