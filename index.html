@@ -7,11 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
 
-<!-- ████████████████████████████████████████████████████████████████
-     PASSO 1: Substitui os valores abaixo pelas tuas credenciais Firebase
-     Vai a: https://console.firebase.google.com → O teu projeto →
-     Definições do projeto → As tuas apps → Config
-     ████████████████████████████████████████████████████████████████ -->
 <script>
   const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyA-H7sn1FIaVqabY3VI2iMDGa1WLpJxnq4",
@@ -76,7 +71,7 @@
   }
   .tab-btn.active { background: #FF6B00; color: white; }
 
-  #main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+  #main { padding: 24px; max-width: 1400px; margin: 0 auto; }
   .tab-content { display: none; }
   .tab-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; animation: fadeIn 0.3s ease; }
 
@@ -120,13 +115,66 @@
   .hour-tag-del { cursor: pointer; opacity: 0.7; }
   .hour-tag-del:hover { opacity: 1; }
 
-  .ordem-item { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 14px 0; display: flex; flex-direction: column; gap: 8px; animation: fadeIn 0.3s ease; }
-  .ordem-header { display: flex; justify-content: space-between; align-items: flex-start; }
-  .ordem-mat { color: #f1f5f9; font-weight: 700; font-size: 15px; }
-  .ordem-time { color: #475569; font-size: 11px; }
-  .ordem-badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .ordem-ref { color: #94a3b8; font-size: 12px; }
-  .empty-state { color: #64748b; text-align: center; padding: 40px; font-size: 13px; }
+  /* ── ORDENS GRID (novo layout lado a lado) ─────────────────────────── */
+  #ordens-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    min-height: 80px;
+  }
+
+  .ordem-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.2s;
+    animation: fadeIn 0.3s ease;
+  }
+  .ordem-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+    border-color: rgba(255,107,0,0.35);
+  }
+  .ordem-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .ordem-card-mat {
+    color: #f1f5f9;
+    font-weight: 700;
+    font-size: 16px;
+    flex: 1;
+    min-width: 0;
+  }
+  .ordem-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .ordem-card-ref {
+    color: #94a3b8;
+    font-size: 12px;
+    word-break: break-all;
+  }
+  .ordem-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .ordem-card-time {
+    color: #475569;
+    font-size: 11px;
+  }
+  /* ───────────────────────────────────────────────────────────────────── */
 
   .van-item { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 16px 0; animation: fadeIn 0.3s ease; }
   .van-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -153,11 +201,132 @@
   .toast-close { background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.5); color: white; padding: 10px 32px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 1px; font-family: 'Rajdhani', sans-serif; }
   .toast-more  { color: rgba(255,255,255,0.6); margin-top: 10px; font-size: 12px; }
 
+  /* ── HISTÓRICO MODAL ──────────────────────────────────────────────── */
+  #hist-overlay {
+    display: none; position: fixed; inset: 0; z-index: 9998;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  }
+  #hist-overlay.show { display: flex; align-items: center; justify-content: center; }
+
+  #hist-modal {
+    background: #0f172a;
+    border: 1px solid rgba(255,107,0,0.3);
+    border-radius: 16px;
+    width: 92%; max-width: 900px;
+    max-height: 85vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 60px rgba(255,107,0,0.15), 0 24px 64px rgba(0,0,0,0.8);
+    animation: popIn 0.25s cubic-bezier(0.175,0.885,0.32,1.275);
+  }
+  #hist-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+  #hist-title {
+    font-size: 14px; font-weight: 700; letter-spacing: 3px;
+    color: #FF6B00; text-transform: uppercase; flex: 1;
+  }
+  #hist-stats { display: flex; gap: 12px; align-items: center; }
+  .hist-stat {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    padding: 4px 10px; border-radius: 20px;
+  }
+  .hist-stat-ativa  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+  .hist-stat-elim   { background: rgba(239,68,68,0.15);  color: #ef4444; }
+  .hist-stat-total  { background: rgba(255,107,0,0.12);  color: #FF6B00; }
+  #hist-close {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: #94a3b8; padding: 6px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+    font-family: 'Rajdhani', sans-serif; transition: all 0.2s;
+  }
+  #hist-close:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+
+  #hist-filters {
+    display: flex; gap: 8px; padding: 14px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    flex-shrink: 0; flex-wrap: wrap; align-items: center;
+  }
+  .hist-filter-btn {
+    padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: #64748b; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; cursor: pointer; font-family: 'Rajdhani', sans-serif;
+    transition: all 0.15s;
+  }
+  .hist-filter-btn.active { background: rgba(255,107,0,0.15); border-color: rgba(255,107,0,0.4); color: #FF6B00; }
+  #hist-search {
+    margin-left: auto; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+    padding: 6px 12px; color: #f1f5f9; font-size: 12px; outline: none;
+    font-family: 'Rajdhani', sans-serif; width: 180px;
+  }
+  #hist-search:focus { border-color: rgba(255,107,0,0.4); }
+  #hist-search::placeholder { color: rgba(255,255,255,0.2); }
+
+  #hist-body {
+    overflow-y: auto; padding: 16px 24px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px; align-content: start;
+  }
+
+  .hist-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px; padding: 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    position: relative; transition: border-color 0.2s;
+  }
+  .hist-card.eliminada {
+    background: rgba(239,68,68,0.04);
+    border-color: rgba(239,68,68,0.18);
+    opacity: 0.75;
+  }
+  .hist-card.eliminada:hover { border-color: rgba(239,68,68,0.35); opacity: 1; }
+  .hist-card.ativa:hover { border-color: rgba(255,107,0,0.35); }
+
+  .hist-status-tag {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .hist-status-ativa  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+  .hist-status-elim   { background: rgba(239,68,68,0.15);  color: #ef4444; }
+
+  .hist-card-mat { color: #f1f5f9; font-weight: 700; font-size: 14px; padding-right: 60px; }
+  .hist-card-mat.sem-mat { color: #475569; font-style: italic; }
+  .hist-card-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+  .hist-card-ref { color: #64748b; font-size: 11px; word-break: break-all; }
+  .hist-card-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05);
+    gap: 6px; flex-wrap: wrap;
+  }
+  .hist-card-times { display: flex; flex-direction: column; gap: 2px; }
+  .hist-card-time { color: #475569; font-size: 10px; }
+  .hist-card-time.elim-time { color: rgba(239,68,68,0.6); }
+
+  .restore-btn {
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+    color: #22c55e; padding: 3px 10px; border-radius: 6px;
+    font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+    font-family: 'Rajdhani', sans-serif; transition: all 0.2s; white-space: nowrap;
+  }
+  .restore-btn:hover { background: rgba(34,197,94,0.22); border-color: #22c55e; }
+
+  #hist-empty {
+    grid-column: 1/-1; text-align: center;
+    color: #475569; padding: 48px; font-size: 13px;
+  }
+  /* ─────────────────────────────────────────────────────────────────── */
+
   #tab-notas.active { display: block !important; }
   @media (max-width: 700px) {
     .tab-content.active { grid-template-columns: 1fr; }
     .grid2 { grid-template-columns: 1fr; }
     #main { padding: 12px; }
+    #ordens-list { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -207,9 +376,16 @@
         <div class="field"><label>Referência / E-mail (Horas)</label><input id="f-ref" placeholder="REF001 / email@... / 08:00h"></div>
         <button class="btn btn-orange" id="btn-ordem" onclick="submitOrdem()">🚀 Inserir Ordem</button>
       </div>
+
       <div style="padding: 0 4px;">
-        <div class="card-title" style="margin-bottom:12px;">📋 Ordens Recentes <span class="count" id="ordens-count">0 total</span></div>
-        <div id="ordens-list" style="position:relative;min-height:100px;"></div>
+        <div class="card-title" style="margin-bottom:16px;">
+          📋 Ordens Recentes
+          <span class="count" id="ordens-count">0 total</span>
+          <button onclick="openHistorico()" style="margin-left:8px;background:rgba(255,107,0,0.12);border:1px solid rgba(255,107,0,0.35);color:#FF6B00;padding:5px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;font-family:'Rajdhani',sans-serif;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,107,0,0.22)'" onmouseout="this.style.background='rgba(255,107,0,0.12)'">
+            🗂️ VER HISTÓRICO
+          </button>
+        </div>
+        <div id="ordens-list"></div>
       </div>
     </div>
   </div>
@@ -241,7 +417,6 @@
         <button class="btn btn-blue" onclick="submitVan()">➕ Registar Carrinha</button>
       </div>
 
-      <!-- Test notifications -->
       <div class="card">
         <div class="card-title">🧪 Testar Notificações</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -283,6 +458,29 @@
 
 </div>
 
+<!-- HISTÓRICO MODAL -->
+<div id="hist-overlay" onclick="closeHistoricoOutside(event)">
+  <div id="hist-modal">
+    <div id="hist-header">
+      <span style="font-size:20px">🗂️</span>
+      <div id="hist-title">Histórico de Ordens</div>
+      <div id="hist-stats">
+        <span class="hist-stat hist-stat-ativa" id="hist-stat-ativa">0 ativas</span>
+        <span class="hist-stat hist-stat-elim"  id="hist-stat-elim">0 eliminadas</span>
+        <span class="hist-stat hist-stat-total" id="hist-stat-total">0 total</span>
+      </div>
+      <button id="hist-close" onclick="closeHistorico()">✕ FECHAR</button>
+    </div>
+    <div id="hist-filters">
+      <button class="hist-filter-btn active" onclick="setHistFilter('todas', this)">Todas</button>
+      <button class="hist-filter-btn" onclick="setHistFilter('ativas', this)">✅ Ativas</button>
+      <button class="hist-filter-btn" onclick="setHistFilter('eliminadas', this)">🗑️ Eliminadas</button>
+      <input id="hist-search" type="text" placeholder="🔍 Pesquisar..." oninput="renderHistorico()">
+    </div>
+    <div id="hist-body"></div>
+  </div>
+</div>
+
 <!-- OVERLAY / TOAST -->
 <div id="overlay" onclick="dismissToast()">
   <div id="toast-box" class="toast-box ordem">
@@ -299,7 +497,7 @@
 const isConfigured = FIREBASE_CONFIG.apiKey !== "COLE_AQUI_apiKey";
 
 let db = null;
-let ordensRef, vansRef, notifsRef, extraHoursRef, notasRef;
+let ordensRef, vansRef, notifsRef, extraHoursRef, notasRef, historicoRef;
 
 if (isConfigured) {
   firebase.initializeApp(FIREBASE_CONFIG);
@@ -309,6 +507,7 @@ if (isConfigured) {
   notifsRef    = db.ref('notifs');
   extraHoursRef= db.ref('extraHours');
   notasRef = db.ref('notas');
+  historicoRef = db.ref('ordens_historico');
 } else {
   document.getElementById('setup-banner').classList.add('show');
   document.getElementById('live-dot').classList.add('offline');
@@ -318,6 +517,8 @@ if (isConfigured) {
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let ordens = [];
 let vans   = [];
+let historico = []; // todas as ordens (ativas + eliminadas)
+let histFilter = 'todas';
 let extraHours = [];
 const seenNotifs = new Set(JSON.parse(localStorage.getItem('tms_seen_v3') || '[]'));
 let toastQueue = [], vanToastQueue = [];
@@ -369,7 +570,6 @@ function handleIncomingNotif(notif) {
   seenNotifs.add(notif.id);
   localStorage.setItem('tms_seen_v3', JSON.stringify([...seenNotifs].slice(-300)));
 
-  // System OS notification (shows even if on another tab/window)
   const isVan = notif.type === 'van';
   sendSystemNotif(
     isVan ? '🚐 Update de Carrinha — TMS' : '🚚 Nova Ordem de Carga — TMS',
@@ -406,7 +606,6 @@ function pushNotif(type, message) {
   const notif = { id: type + '_' + Date.now() + '_' + Math.random().toString(36).slice(2), type, message, ts: Date.now() };
   if (isConfigured) {
     notifsRef.push(notif);
-    // Clean notifs older than 2 min
     notifsRef.once('value', snap => {
       snap.forEach(child => {
         if (Date.now() - child.val().ts > 120000) child.ref.remove();
@@ -419,7 +618,6 @@ function pushNotif(type, message) {
 
 // ─── FIREBASE LISTENERS ──────────────────────────────────────────────────────
 if (isConfigured) {
-  // Ordens
   ordensRef.on('value', snap => {
     ordens = [];
     snap.forEach(child => ordens.push({ _key: child.key, ...child.val() }));
@@ -427,29 +625,32 @@ if (isConfigured) {
     renderOrdens();
   });
 
-  // Vans
   vansRef.on('value', snap => {
     vans = [];
     snap.forEach(child => vans.push({ _key: child.key, ...child.val() }));
     renderVans();
   });
 
-  // Notifs (real-time for all users)
   notifsRef.on('child_added', snap => {
     handleIncomingNotif(snap.val());
   });
 
-  // Extra hours
   extraHoursRef.on('value', snap => {
     extraHours = snap.val() ? Object.values(snap.val()) : [];
     extraHours.sort();
     renderExtraHours();
   });
 
-  // Connection state
   db.ref('.info/connected').on('value', snap => {
     const dot = document.getElementById('live-dot');
     dot.classList.toggle('offline', !snap.val());
+  });
+
+  // Histórico
+  historicoRef.on('value', snap => {
+    historico = [];
+    snap.forEach(child => historico.push({ _key: child.key, ...child.val() }));
+    historico.sort((a,b) => b.ts - a.ts);
   });
 }
 
@@ -466,9 +667,13 @@ function submitOrdem() {
   const nova = { matricula: mat, preco, custo, ref, pessoa, ts: Date.now() };
 
   if (isConfigured) {
-    ordensRef.push(nova);
+    const pushed = ordensRef.push(nova);
+    // Guardar também no histórico com o mesmo key
+    historicoRef.child(pushed.key).set({ ...nova, _firebaseKey: pushed.key, estado: 'ativa' });
   } else {
-    ordens = [{ id: Date.now(), ...nova }, ...ordens];
+    const id = Date.now();
+    ordens = [{ id, ...nova }, ...ordens];
+    historico = [{ id, ...nova, estado: 'ativa' }, ...historico];
     renderOrdens();
   }
 
@@ -485,96 +690,282 @@ function submitOrdem() {
 }
 
 function deleteOrdem(key) {
+  const ordem = ordens.find(o => (o._key || String(o.id)) === key);
   if (isConfigured) {
+    // Marcar no histórico como eliminada
+    historicoRef.child(key).update({ estado: 'eliminada', eliminadaTs: Date.now() });
     ordensRef.child(key).remove();
   } else {
-    ordens = ordens.filter(o => o.id != key);
+    if (ordem) {
+      const idx = historico.findIndex(h => (h._key || String(h.id)) === key);
+      if (idx >= 0) historico[idx] = { ...historico[idx], estado: 'eliminada', eliminadaTs: Date.now() };
+    }
+    ordens = ordens.filter(o => String(o.id) !== String(key) && o._key !== key);
     renderOrdens();
   }
 }
 
+// ── NOVA renderOrdens: grid lado a lado, cards maiores ──────────────────────
 function renderOrdens() {
-  var list = document.getElementById('ordens-list');
+  const list = document.getElementById('ordens-list');
   document.getElementById('ordens-count').textContent = ordens.length + ' total';
+
+  // Limpar
   while (list.firstChild) list.removeChild(list.firstChild);
+
   if (!ordens.length) {
-    var e = document.createElement('div');
-    e.style.color = '#64748b';
-    e.style.padding = '40px';
-    e.style.fontSize = '13px';
+    const e = document.createElement('div');
+    e.style.cssText = 'color:#64748b;padding:40px;font-size:13px;grid-column:1/-1;text-align:center;';
     e.textContent = 'Nenhuma ordem inserida';
     list.appendChild(e);
-    list.style.minHeight = '80px';
     return;
   }
-  var STEP_X = 32; // deslocamento horizontal por card
-  var STEP_Y = 54; // deslocamento vertical por card
-  var CARD_W = 340;
-  var CARD_H = 130;
-  // altura total do container
-  list.style.minHeight = (CARD_H + STEP_Y * (ordens.length - 1) + 20) + 'px';
-  ordens.forEach(function(o, i) {
-    var key = o._key || o.id;
-    var card = document.createElement('div');
-    card.style.cssText = 'position:absolute;width:' + CARD_W + 'px;left:' + (i * STEP_X) + 'px;top:' + (i * STEP_Y) + 'px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;transition:transform 0.15s,box-shadow 0.15s;cursor:default;';
-    card.onmouseenter = function() { this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4)'; this.style.zIndex='10'; };
-    card.onmouseleave = function() { this.style.transform=''; this.style.boxShadow=''; this.style.zIndex=''; };
 
-    // Header: matrícula + pessoa
-    var header = document.createElement('div');
-    header.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
+  ordens.forEach(function(o) {
+    const key = o._key || String(o.id);
+
+    const card = document.createElement('div');
+    card.className = 'ordem-card';
+
+    // ── Header: matrícula + pessoa ──
+    const header = document.createElement('div');
+    header.className = 'ordem-card-header';
+
     if (o.matricula) {
-      var mat = document.createElement('span');
-      mat.style.cssText = 'color:#f1f5f9;font-weight:700;font-size:15px;';
-      mat.textContent = o.matricula;
+      const mat = document.createElement('span');
+      mat.className = 'ordem-card-mat';
+      mat.textContent = '🚛 ' + o.matricula;
       header.appendChild(mat);
     }
     if (o.pessoa) {
-      var pessoa = document.createElement('span');
+      const pessoa = document.createElement('span');
       pessoa.className = 'badge badge-purple';
       pessoa.textContent = '👤 ' + o.pessoa;
       header.appendChild(pessoa);
     }
     card.appendChild(header);
 
-    // Badges: preço, custo, ref
-    var badges = document.createElement('div');
-    badges.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
-    if (o.preco) {
-      var p = document.createElement('span');
-      p.className = 'badge badge-green';
-      p.textContent = '💶 ' + o.preco + '€';
-      badges.appendChild(p);
-    }
-    if (o.custo) {
-      var c = document.createElement('span');
-      c.className = 'badge badge-amber';
-      c.textContent = '💰 ' + o.custo + '€';
-      badges.appendChild(c);
-    }
-    if (o.ref) {
-      var r = document.createElement('span');
-      r.style.cssText = 'color:#94a3b8;font-size:12px;';
-      r.textContent = '📧 ' + o.ref;
-      badges.appendChild(r);
-    }
-    card.appendChild(badges);
+    // ── Badges: preço e custo ──
+    if (o.preco || o.custo) {
+      const badges = document.createElement('div');
+      badges.className = 'ordem-card-badges';
 
-    // Footer: hora + botão eliminar
-    var footer = document.createElement('div');
-    footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:2px;';
-    var time = document.createElement('span');
-    time.style.cssText = 'color:#475569;font-size:11px;';
+      if (o.preco) {
+        const p = document.createElement('span');
+        p.className = 'badge badge-green';
+        p.textContent = '💶 ' + o.preco + '€';
+        badges.appendChild(p);
+      }
+      if (o.custo) {
+        const c = document.createElement('span');
+        c.className = 'badge badge-amber';
+        c.textContent = '💰 Custo: ' + o.custo + '€';
+        badges.appendChild(c);
+      }
+      card.appendChild(badges);
+    }
+
+    // ── Referência ──
+    if (o.ref) {
+      const r = document.createElement('div');
+      r.className = 'ordem-card-ref';
+      r.textContent = '📧 ' + o.ref;
+      card.appendChild(r);
+    }
+
+    // ── Footer: hora + eliminar ──
+    const footer = document.createElement('div');
+    footer.className = 'ordem-card-footer';
+
+    const time = document.createElement('span');
+    time.className = 'ordem-card-time';
     time.textContent = formatTime(o.ts);
-    var btn = document.createElement('button');
+
+    const btn = document.createElement('button');
     btn.className = 'delete-btn';
     btn.textContent = '✕ Eliminar';
-    (function(k) { btn.onclick = function() { deleteOrdem(k); }; })(key);
+    (function(k) { btn.onclick = function(e) { e.stopPropagation(); deleteOrdem(k); }; })(key);
+
     footer.appendChild(time);
     footer.appendChild(btn);
     card.appendChild(footer);
 
     list.appendChild(card);
+  });
+}
+
+// ─── HISTÓRICO ───────────────────────────────────────────────────────────────
+function openHistorico() {
+  document.getElementById('hist-overlay').classList.add('show');
+  renderHistorico();
+}
+function closeHistorico() {
+  document.getElementById('hist-overlay').classList.remove('show');
+}
+function closeHistoricoOutside(e) {
+  if (e.target === document.getElementById('hist-overlay')) closeHistorico();
+}
+function setHistFilter(filter, btn) {
+  histFilter = filter;
+  document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistorico();
+}
+
+function restoreOrdem(key) {
+  if (isConfigured) {
+    // Buscar dados do histórico e reinserir nas ordens ativas
+    historicoRef.child(key).once('value', snap => {
+      const data = snap.val();
+      if (!data) return;
+      const { estado, eliminadaTs, _firebaseKey, ...ordemData } = data;
+      ordensRef.child(key).set(ordemData);
+      historicoRef.child(key).update({ estado: 'ativa', eliminadaTs: null });
+    });
+  } else {
+    const idx = historico.findIndex(h => (h._key || String(h.id)) === key);
+    if (idx >= 0) {
+      historico[idx] = { ...historico[idx], estado: 'ativa', eliminadaTs: null };
+      const { estado, eliminadaTs, ...ordemData } = historico[idx];
+      ordens = [ordemData, ...ordens];
+      renderOrdens();
+    }
+  }
+  renderHistorico();
+}
+
+function renderHistorico() {
+  // Combinar ordens ativas (Firebase) com histórico
+  // No Firebase, o histórico é a fonte de verdade para tudo
+  // Localmente, ordens ativas + historico eliminadas
+  let todos = [];
+
+  if (isConfigured) {
+    todos = historico;
+  } else {
+    // Merge: ativas do state + eliminadas do historico
+    const ativasKeys = new Set(ordens.map(o => String(o._key || o.id)));
+    const eliminadas = historico.filter(h => h.estado === 'eliminada');
+    const ativas = ordens.map(o => ({ ...o, estado: 'ativa' }));
+    todos = [...ativas, ...eliminadas].sort((a,b) => b.ts - a.ts);
+  }
+
+  const search = (document.getElementById('hist-search')?.value || '').toLowerCase();
+
+  // Filtrar
+  let filtered = todos.filter(o => {
+    if (histFilter === 'ativas'    && o.estado !== 'ativa')    return false;
+    if (histFilter === 'eliminadas' && o.estado !== 'eliminada') return false;
+    if (search) {
+      const haystack = [o.matricula, o.pessoa, o.ref, o.preco, o.custo].join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  // Stats
+  const nAtivas = todos.filter(o => o.estado === 'ativa').length;
+  const nElim   = todos.filter(o => o.estado === 'eliminada').length;
+  document.getElementById('hist-stat-ativa').textContent = nAtivas + ' ativas';
+  document.getElementById('hist-stat-elim').textContent  = nElim + ' eliminadas';
+  document.getElementById('hist-stat-total').textContent = todos.length + ' total';
+
+  const body = document.getElementById('hist-body');
+  while (body.firstChild) body.removeChild(body.firstChild);
+
+  if (!filtered.length) {
+    const e = document.createElement('div');
+    e.id = 'hist-empty';
+    e.textContent = search ? 'Nenhuma ordem encontrada para "' + search + '"' : 'Nenhuma ordem no histórico';
+    body.appendChild(e);
+    return;
+  }
+
+  filtered.forEach(o => {
+    const key = o._key || String(o.id);
+    const isElim = o.estado === 'eliminada';
+
+    const card = document.createElement('div');
+    card.className = 'hist-card ' + (isElim ? 'eliminada' : 'ativa');
+
+    // Status tag
+    const tag = document.createElement('span');
+    tag.className = 'hist-status-tag ' + (isElim ? 'hist-status-elim' : 'hist-status-ativa');
+    tag.textContent = isElim ? '🗑️ Eliminada' : '✅ Ativa';
+    card.appendChild(tag);
+
+    // Matrícula
+    const mat = document.createElement('div');
+    mat.className = 'hist-card-mat' + (o.matricula ? '' : ' sem-mat');
+    mat.textContent = o.matricula ? '🚛 ' + o.matricula : '(sem matrícula)';
+    card.appendChild(mat);
+
+    // Pessoa
+    if (o.pessoa) {
+      const p = document.createElement('span');
+      p.className = 'badge badge-purple';
+      p.style.fontSize = '11px';
+      p.textContent = '👤 ' + o.pessoa;
+      card.appendChild(p);
+    }
+
+    // Badges preço/custo
+    if (o.preco || o.custo) {
+      const badges = document.createElement('div');
+      badges.className = 'hist-card-badges';
+      if (o.preco) {
+        const pb = document.createElement('span');
+        pb.className = 'badge badge-green';
+        pb.style.fontSize = '11px';
+        pb.textContent = '💶 ' + o.preco + '€';
+        badges.appendChild(pb);
+      }
+      if (o.custo) {
+        const cb = document.createElement('span');
+        cb.className = 'badge badge-amber';
+        cb.style.fontSize = '11px';
+        cb.textContent = '💰 ' + o.custo + '€';
+        badges.appendChild(cb);
+      }
+      card.appendChild(badges);
+    }
+
+    // Ref
+    if (o.ref) {
+      const r = document.createElement('div');
+      r.className = 'hist-card-ref';
+      r.textContent = '📧 ' + o.ref;
+      card.appendChild(r);
+    }
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.className = 'hist-card-footer';
+
+    const times = document.createElement('div');
+    times.className = 'hist-card-times';
+    const t1 = document.createElement('span');
+    t1.className = 'hist-card-time';
+    t1.textContent = '📅 Criada: ' + formatTime(o.ts);
+    times.appendChild(t1);
+    if (isElim && o.eliminadaTs) {
+      const t2 = document.createElement('span');
+      t2.className = 'hist-card-time elim-time';
+      t2.textContent = '🗑️ Eliminada: ' + formatTime(o.eliminadaTs);
+      times.appendChild(t2);
+    }
+    footer.appendChild(times);
+
+    if (isElim) {
+      const rb = document.createElement('button');
+      rb.className = 'restore-btn';
+      rb.textContent = '↩️ Restaurar';
+      (function(k) { rb.onclick = function() { restoreOrdem(k); }; })(key);
+      footer.appendChild(rb);
+    }
+
+    card.appendChild(footer);
+    body.appendChild(card);
   });
 }
 
@@ -593,7 +984,6 @@ function submitVan() {
     horacargatimestamp = d.getTime();
   }
 
-  // updateBase = the timestamp from which recurring intervals are counted
   const updateBase = horacargatimestamp || Date.now();
   const data = { matricula: mat, intervalo, notas, horacarga, horacargatimestamp, updateBase, lastUpdate: Date.now() };
 
@@ -612,7 +1002,6 @@ function submitVan() {
 
 function deiUpdate(mat) {
   const now = Date.now();
-  // Reset updateBase to now so next alert fires X hours from this moment
   const update = { lastUpdate: now, updateBase: now, horacargatimestamp: null, horacarga: '' };
   if (isConfigured) {
     vansRef.child(mat).update(update);
@@ -620,7 +1009,6 @@ function deiUpdate(mat) {
     const idx = vans.findIndex(v => v.matricula === mat);
     if (idx >= 0) { vans[idx] = { ...vans[idx], ...update }; renderVans(); }
   }
-  // Clear fired alerts for this van so recurring alert restarts cleanly
   [...firedAlerts].forEach(k => { if (k.startsWith(mat + '_')) firedAlerts.delete(k); });
   localStorage.setItem('tms_fired_v3', JSON.stringify([...firedAlerts].slice(-500)));
 }
@@ -639,11 +1027,10 @@ function renderVans() {
     const base = v.updateBase || v.horacargatimestamp || v.lastUpdate;
     const intervalMs = parseFloat(v.intervalo) * 3600000;
     const elapsed = Date.now() - base;
-    const cycleMs = elapsed % intervalMs; // time within current cycle
-    const remaining = intervalMs - cycleMs; // ms until next alert
+    const cycleMs = elapsed % intervalMs;
+    const remaining = intervalMs - cycleMs;
     const remMin = Math.floor(remaining / 60000);
     const remH = Math.floor(remMin / 60), remM = remMin % 60;
-    const isLate = elapsed >= intervalMs && cycleMs < 60000; // within first minute of being overdue
 
     const countdownColor = remMin < 30 ? '#ef4444' : remMin < 60 ? '#f59e0b' : '#a78bfa';
     const countdownText = remMin > 0
@@ -725,7 +1112,6 @@ function checkVanAlerts() {
   const timeStr = `${h}:${m}`;
   const dayStr  = now.toDateString();
 
-  // ── FIXED + EXTRA HOUR ALERTS — global, fire once per alert time, independent of vans
   if (timeStr !== lastCheckedMinute) {
     lastCheckedMinute = timeStr;
     const allHours = [...new Set([...FIXED_HOURS, ...extraHours])];
@@ -746,15 +1132,14 @@ function checkVanAlerts() {
     });
   }
 
-  // ── PER-VAN CUSTOM ALERTS — recurring every X hours from updateBase
   vans.forEach(van => {
     const base = van.updateBase || van.horacargatimestamp || van.lastUpdate;
     if (!base || !van.intervalo) return;
     const intervalMs = parseFloat(van.intervalo) * 3600000;
     const elapsed = Date.now() - base;
     if (elapsed < 0) return;
-    const cycle = Math.floor(elapsed / intervalMs); // which cycle we're in (0,1,2,...)
-    if (cycle < 1) return; // first cycle not complete yet
+    const cycle = Math.floor(elapsed / intervalMs);
+    if (cycle < 1) return;
     const key = `${van.matricula}_recurring_${cycle}_${Math.floor(base/1000)}`;
     if (!firedAlerts.has(key)) {
       firedAlerts.add(key);
@@ -765,7 +1150,6 @@ function checkVanAlerts() {
     }
   });
 }
-
 
 // ─── NOTAS ───────────────────────────────────────────────────────────────────
 let notas = [];
@@ -885,7 +1269,7 @@ if (isConfigured) {
 }
 
 setInterval(checkVanAlerts, 10000);
-setInterval(() => { if (vans.length) renderVans(); }, 30000); // refresh countdown every 30s
+setInterval(() => { if (vans.length) renderVans(); }, 30000);
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 if (!isConfigured) {
@@ -894,7 +1278,6 @@ if (!isConfigured) {
   renderExtraHours();
 }
 
-// Show "Ativar Alertas" button if permission not yet granted
 if ('Notification' in window && Notification.permission !== 'granted') {
   document.getElementById('notif-btn').style.display = 'block';
 }
