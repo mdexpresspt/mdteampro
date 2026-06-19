@@ -667,9 +667,11 @@ function submitOrdem() {
   const nova = { matricula: mat, preco, custo, ref, pessoa, ts: Date.now() };
 
   if (isConfigured) {
-    const pushed = ordensRef.push(nova);
-    // Guardar também no histórico com o mesmo key
-    historicoRef.child(pushed.key).set({ ...nova, _firebaseKey: pushed.key, estado: 'ativa' });
+    // push() sem argumento gera o key de forma síncrona, depois set() envia os dados
+    const newRef = ordensRef.push();
+    const newKey = newRef.key;
+    newRef.set(nova);
+    historicoRef.child(newKey).set({ ...nova, _firebaseKey: newKey, estado: 'ativa' });
   } else {
     const id = Date.now();
     ordens = [{ id, ...nova }, ...ordens];
