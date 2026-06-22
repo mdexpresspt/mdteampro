@@ -810,10 +810,37 @@ function renderOrdens() {
   });
 }
 
+
 // ─── HISTÓRICO ───────────────────────────────────────────────────────────────
+let todosMerged = [];
+
+function buildTodosErender() {
+  // Fonte 1: ordens ATIVAS de /ordens (inclui ordens antigas que nunca passaram pelo histórico)
+  const merged = {};
+  ordens.forEach(o => {
+    const k = o._key || String(o.id);
+    merged[k] = { ...o, estado: 'ativa' };
+  });
+
+  // Fonte 2: /ordens_historico (tem estado: 'ativa' ou 'eliminada')
+  // As eliminadas não estão em /ordens — só aqui
+  historico.forEach(h => {
+    const k = h._key || String(h.id);
+    if (h.estado === 'eliminada') {
+      // Eliminada: mostrar sempre do histórico
+      merged[k] = h;
+    } else {
+      // Ativa no histórico: só adicionar se não já veio de /ordens
+      if (!merged[k]) merged[k] = h;
+    }
+  });
+
+  todosMerged = Object.values(merged).sort((a, b) => b.ts - a.ts);
+  renderHistorico();
+}
+
 function openHistorico() {
   document.getElementById('hist-overlay').classList.add('show');
-  // Ao abrir, fazer merge das ordens ativas com o histórico e re-render
   buildTodosErender();
 }
 function closeHistorico() {
@@ -826,12 +853,22 @@ function setHistFilter(filter, btn) {
   histFilter = filter;
   document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  buildTodosErender();
+  renderHistorico(); // só re-filtra, não refaz o merge
+}
+
+function deleteFromHistorico(key) {
+  if (!confirm('Apagar permanentemente do histórico? Esta ação não pode ser desfeita.')) return;
+  if (isConfigured) {
+    historicoRef.child(key).remove();
+  } else {
+    historico = historico.filter(h => (h._key || String(h.id)) !== key);
+    todosMerged = todosMerged.filter(h => (h._key || String(h.id)) !== key);
+    renderHistorico();
+  }
 }
 
 function restoreOrdem(key) {
   if (isConfigured) {
-    // Buscar dados do histórico e reinserir nas ordens ativas
     historicoRef.child(key).once('value', snap => {
       const data = snap.val();
       if (!data) return;
@@ -843,63 +880,17 @@ function restoreOrdem(key) {
     const idx = historico.findIndex(h => (h._key || String(h.id)) === key);
     if (idx >= 0) {
       historico[idx] = { ...historico[idx], estado: 'ativa', eliminadaTs: null };
-      const { estado, eliminadaTs, ...ordemData } = historico[idx];
-      ordens = [ordemData, ...ordens];
+      ordens = [{ ...historico[idx] }, ...ordens];
       renderOrdens();
     }
+    buildTodosErender();
   }
-  buildTodosErender();
-}
-
-function deleteFromHistorico(key) {
-  if (!confirm('Eliminar permanentemente do histórico? Esta ação não pode ser desfeita.')) return;
-  if (isConfigured) {
-    historicoRef.child(key).remove();
-  } else {
-    historico = historico.filter(h => (h._key || String(h.id)) !== key);
-    renderHistorico();
-  }
-}
-
-// Merge ordens ativas (de /ordens) com histórico (de /ordens_historico)
-// Garante que ordens antigas que nunca passaram pelo histórico aparecem também
-let todosMerged = [];
-
-function buildTodosErender() {
-  // Ordens ativas: vêm do listener de /ordens (array `ordens`)
-  const ativasMap = {};
-  ordens.forEach(o => { ativasMap[o._key || String(o.id)] = { ...o, estado: 'ativa' }; });
-
-  // Histórico: vem do listener de /ordens_historico
-  const histMap = {};
-  historico.forEach(h => { histMap[h._key || String(h.id)] = h; });
-
-  // Merge: para cada ordem ativa, se não está no histórico, adiciona como ativa
-  // Para o histórico, usa o estado que lá está (ativa ou eliminada)
-  const merged = {};
-
-  // Primeiro as do histórico
-  Object.entries(histMap).forEach(([k, h]) => { merged[k] = h; });
-
-  // Depois as ativas que não estão no histórico (ordens antigas)
-  Object.entries(ativasMap).forEach(([k, o]) => {
-    if (!merged[k]) merged[k] = o;
-    else merged[k] = { ...merged[k], estado: 'ativa' }; // garantir estado correto
-  });
-
-  todosMerged = Object.values(merged).sort((a,b) => b.ts - a.ts);
-  renderHistorico();
 }
 
 function renderHistorico() {
-  let todos = todosMerged.length ? todosMerged : [
-    ...ordens.map(o => ({ ...o, estado: 'ativa' })),
-    ...historico.filter(h => h.estado === 'eliminada')
-  ].sort((a,b) => b.ts - a.ts);
+  const search = (document.getElementById('hist-search')?.value || '').toLowerCase().trim();
 
-  const search = (document.getElementById('hist-search')?.value || '').toLowerCase();
-
-  let filtered = todos.filter(o => {
+  let filtered = todosMerged.filter(o => {
     if (histFilter === 'ativas'     && o.estado !== 'ativa')     return false;
     if (histFilter === 'eliminadas' && o.estado !== 'eliminada') return false;
     if (search) {
@@ -909,24 +900,25 @@ function renderHistorico() {
     return true;
   });
 
-  const nAtivas = todos.filter(o => o.estado === 'ativa').length;
-  const nElim   = todos.filter(o => o.estado === 'eliminada').length;
+  // Stats (sobre todos, sem filtro)
+  const nAtivas = todosMerged.filter(o => o.estado === 'ativa').length;
+  const nElim   = todosMerged.filter(o => o.estado === 'eliminada').length;
   document.getElementById('hist-stat-ativa').textContent = nAtivas + ' ativas';
   document.getElementById('hist-stat-elim').textContent  = nElim + ' eliminadas';
-  document.getElementById('hist-stat-total').textContent = todos.length + ' total';
+  document.getElementById('hist-stat-total').textContent = todosMerged.length + ' total';
 
   const body = document.getElementById('hist-body');
   body.innerHTML = '';
 
   if (!filtered.length) {
-    body.innerHTML = '<div id="hist-empty">' + (search ? 'Nenhuma ordem encontrada para "' + search + '"' : 'Nenhuma ordem no histórico') + '</div>';
+    body.innerHTML = '<div id="hist-empty">' +
+      (search ? 'Nenhuma ordem encontrada para "' + search + '"' : 'Nenhuma ordem no histórico') +
+      '</div>';
     return;
   }
 
   const table = document.createElement('table');
   table.id = 'hist-table';
-
-  // Header
   table.innerHTML = `<thead><tr>
     <th>Estado</th>
     <th>Matrícula / Transportador</th>
@@ -944,7 +936,6 @@ function renderHistorico() {
   filtered.forEach(function(o) {
     const key = o._key || String(o.id);
     const isElim = o.estado === 'eliminada';
-
     const tr = document.createElement('tr');
     tr.className = isElim ? 'row-elim' : '';
 
@@ -971,28 +962,14 @@ function renderHistorico() {
 
     // Preço
     const tdPreco = document.createElement('td');
-    if (o.preco) {
-      const s = document.createElement('span');
-      s.className = 'badge badge-green';
-      s.textContent = '💶 ' + o.preco + '€';
-      tdPreco.appendChild(s);
-    } else {
-      tdPreco.textContent = '—';
-      tdPreco.style.color = '#475569';
-    }
+    if (o.preco) { const s = document.createElement('span'); s.className = 'badge badge-green'; s.textContent = '💶 ' + o.preco + '€'; tdPreco.appendChild(s); }
+    else { tdPreco.textContent = '—'; tdPreco.style.color = '#475569'; }
     tr.appendChild(tdPreco);
 
     // Custo
     const tdCusto = document.createElement('td');
-    if (o.custo) {
-      const s = document.createElement('span');
-      s.className = 'badge badge-amber';
-      s.textContent = '💰 ' + o.custo + '€';
-      tdCusto.appendChild(s);
-    } else {
-      tdCusto.textContent = '—';
-      tdCusto.style.color = '#475569';
-    }
+    if (o.custo) { const s = document.createElement('span'); s.className = 'badge badge-amber'; s.textContent = '💰 ' + o.custo + '€'; tdCusto.appendChild(s); }
+    else { tdCusto.textContent = '—'; tdCusto.style.color = '#475569'; }
     tr.appendChild(tdCusto);
 
     // Ref
@@ -1017,7 +994,6 @@ function renderHistorico() {
     const tdAcoes = document.createElement('td');
     const actions = document.createElement('div');
     actions.className = 'hist-row-actions';
-
     if (isElim) {
       const rb = document.createElement('button');
       rb.className = 'restore-btn';
@@ -1025,15 +1001,11 @@ function renderHistorico() {
       (function(k) { rb.onclick = function() { restoreOrdem(k); }; })(key);
       actions.appendChild(rb);
     }
-
     const ab = document.createElement('button');
     ab.className = 'hist-apagar-btn';
     ab.textContent = '✕ Apagar';
-    (function(k) { ab.onclick = function() {
-      if (confirm('Apagar permanentemente do histórico?')) deleteFromHistorico(k);
-    }; })(key);
+    (function(k) { ab.onclick = function() { deleteFromHistorico(k); }; })(key);
     actions.appendChild(ab);
-
     tdAcoes.appendChild(actions);
     tr.appendChild(tdAcoes);
 
