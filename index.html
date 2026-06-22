@@ -651,6 +651,10 @@ if (isConfigured) {
     historico = [];
     snap.forEach(child => historico.push({ _key: child.key, ...child.val() }));
     historico.sort((a,b) => b.ts - a.ts);
+    // Atualizar modal se estiver aberto
+    if (document.getElementById('hist-overlay').classList.contains('show')) {
+      renderHistorico();
+    }
   });
 }
 
@@ -850,6 +854,16 @@ function restoreOrdem(key) {
   renderHistorico();
 }
 
+function deleteFromHistorico(key) {
+  if (!confirm('Eliminar permanentemente do histórico? Esta ação não pode ser desfeita.')) return;
+  if (isConfigured) {
+    historicoRef.child(key).remove();
+  } else {
+    historico = historico.filter(h => (h._key || String(h.id)) !== key);
+    renderHistorico();
+  }
+}
+
 function renderHistorico() {
   // Combinar ordens ativas (Firebase) com histórico
   // No Firebase, o histórico é a fonte de verdade para tudo
@@ -972,14 +986,28 @@ function renderHistorico() {
     }
     footer.appendChild(times);
 
+    // Botões de ação (sempre visíveis)
+    const actions = document.createElement('div');
+    actions.style.cssText = 'display:flex;gap:6px;align-items:center;';
+
     if (isElim) {
       const rb = document.createElement('button');
       rb.className = 'restore-btn';
       rb.textContent = '↩️ Restaurar';
       (function(k) { rb.onclick = function() { restoreOrdem(k); }; })(key);
-      footer.appendChild(rb);
+      actions.appendChild(rb);
     }
 
+    // Botão eliminar do histórico (sempre disponível)
+    const db_btn = document.createElement('button');
+    db_btn.style.cssText = 'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;font-family:"Rajdhani",sans-serif;transition:all 0.2s;white-space:nowrap;';
+    db_btn.textContent = '🗑️ Apagar';
+    db_btn.onmouseover = function() { this.style.background='rgba(239,68,68,0.25)'; this.style.borderColor='#ef4444'; };
+    db_btn.onmouseout  = function() { this.style.background='rgba(239,68,68,0.1)'; this.style.borderColor='rgba(239,68,68,0.3)'; };
+    (function(k) { db_btn.onclick = function() { deleteFromHistorico(k); }; })(key);
+    actions.appendChild(db_btn);
+
+    footer.appendChild(actions);
     card.appendChild(footer);
     body.appendChild(card);
   });
