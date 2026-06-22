@@ -473,7 +473,7 @@
       <button class="hist-filter-btn active" onclick="setHistFilter('todas', this)">Todas</button>
       <button class="hist-filter-btn" onclick="setHistFilter('ativas', this)">✅ Ativas</button>
       <button class="hist-filter-btn" onclick="setHistFilter('eliminadas', this)">🗑️ Eliminadas</button>
-      <input id="hist-search" type="text" placeholder="🔍 Pesquisar..." oninput="renderHistorico()">
+      <input id="hist-search" type="text" placeholder="🔍 Pesquisar por matrícula, pessoa, referência..." oninput="buildTodosErender()" style="width:300px;">
     </div>
     <div id="hist-body"></div>
   </div>
@@ -621,6 +621,7 @@ if (isConfigured) {
     snap.forEach(child => ordens.push({ _key: child.key, ...child.val() }));
     ordens.sort((a,b) => b.ts - a.ts);
     renderOrdens();
+    if (document.getElementById('hist-overlay').classList.contains('show')) buildTodosErender();
   });
 
   vansRef.on('value', snap => {
@@ -649,10 +650,7 @@ if (isConfigured) {
     historico = [];
     snap.forEach(child => historico.push({ _key: child.key, ...child.val() }));
     historico.sort((a,b) => b.ts - a.ts);
-    // Atualizar modal se estiver aberto
-    if (document.getElementById('hist-overlay').classList.contains('show')) {
-      renderHistorico();
-    }
+    if (document.getElementById('hist-overlay').classList.contains('show')) buildTodosErender();
   });
 }
 
@@ -815,7 +813,8 @@ function renderOrdens() {
 // ─── HISTÓRICO ───────────────────────────────────────────────────────────────
 function openHistorico() {
   document.getElementById('hist-overlay').classList.add('show');
-  renderHistorico();
+  // Ao abrir, fazer merge das ordens ativas com o histórico e re-render
+  buildTodosErender();
 }
 function closeHistorico() {
   document.getElementById('hist-overlay').classList.remove('show');
@@ -827,7 +826,7 @@ function setHistFilter(filter, btn) {
   histFilter = filter;
   document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderHistorico();
+  buildTodosErender();
 }
 
 function restoreOrdem(key) {
@@ -849,7 +848,7 @@ function restoreOrdem(key) {
       renderOrdens();
     }
   }
-  renderHistorico();
+  buildTodosErender();
 }
 
 function deleteFromHistorico(key) {
@@ -862,8 +861,38 @@ function deleteFromHistorico(key) {
   }
 }
 
+// Merge ordens ativas (de /ordens) com histórico (de /ordens_historico)
+// Garante que ordens antigas que nunca passaram pelo histórico aparecem também
+let todosMerged = [];
+
+function buildTodosErender() {
+  // Ordens ativas: vêm do listener de /ordens (array `ordens`)
+  const ativasMap = {};
+  ordens.forEach(o => { ativasMap[o._key || String(o.id)] = { ...o, estado: 'ativa' }; });
+
+  // Histórico: vem do listener de /ordens_historico
+  const histMap = {};
+  historico.forEach(h => { histMap[h._key || String(h.id)] = h; });
+
+  // Merge: para cada ordem ativa, se não está no histórico, adiciona como ativa
+  // Para o histórico, usa o estado que lá está (ativa ou eliminada)
+  const merged = {};
+
+  // Primeiro as do histórico
+  Object.entries(histMap).forEach(([k, h]) => { merged[k] = h; });
+
+  // Depois as ativas que não estão no histórico (ordens antigas)
+  Object.entries(ativasMap).forEach(([k, o]) => {
+    if (!merged[k]) merged[k] = o;
+    else merged[k] = { ...merged[k], estado: 'ativa' }; // garantir estado correto
+  });
+
+  todosMerged = Object.values(merged).sort((a,b) => b.ts - a.ts);
+  renderHistorico();
+}
+
 function renderHistorico() {
-  let todos = isConfigured ? historico : [
+  let todos = todosMerged.length ? todosMerged : [
     ...ordens.map(o => ({ ...o, estado: 'ativa' })),
     ...historico.filter(h => h.estado === 'eliminada')
   ].sort((a,b) => b.ts - a.ts);
