@@ -25,7 +25,36 @@
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { min-height: 100vh; background: #0a0f1a; font-family: 'Rajdhani', 'Oswald', sans-serif; color: #f1f5f9; }
+  body { min-height: 100vh; background: #0a0f1a; font-family: 'Rajdhani', 'Oswald', sans-serif; color: #f1f5f9; position: relative; }
+
+  #bg-slideshow {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+  #bg-slideshow.hidden { display: none; }
+  .bg-slide {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    opacity: 0; transition: opacity 1.5s ease;
+  }
+  .bg-slide.active { opacity: 0.25; }
+  #bg-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(10,15,26,0.6) 0%, rgba(10,15,26,0.4) 50%, rgba(10,15,26,0.7) 100%);
+  }
+  #header, #tabs, #main { position: relative; z-index: 1; }
+
+  #bg-toggle-btn {
+    margin-left: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #94a3b8; padding: 6px 14px; border-radius: 8px;
+    font-size: 11px; font-weight: 700; cursor: pointer;
+    letter-spacing: 1px; font-family: 'Rajdhani', sans-serif;
+    transition: all 0.2s;
+  }
+  #bg-toggle-btn:hover { background: rgba(255,255,255,0.15); color: #f1f5f9; }
+  #bg-toggle-btn.on { background: rgba(255,107,0,0.15); border-color: rgba(255,107,0,0.4); color: #FF6B00; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: #0a0f1a; }
   ::-webkit-scrollbar-thumb { background: #FF6B00; border-radius: 3px; }
@@ -331,6 +360,14 @@
 </head>
 <body>
 
+<!-- BACKGROUND SLIDESHOW -->
+<div id="bg-slideshow">
+  <div class="bg-slide" style="background-image:url('https://mdexpresspt.github.io/mdteampro/preview.webp')"></div>
+  <div class="bg-slide" style="background-image:url('https://mdexpresspt.github.io/mdteampro/preview%20(1).webp')"></div>
+  <div class="bg-slide" style="background-image:url('https://mdexpresspt.github.io/mdteampro/preview%20(2).webp')"></div>
+  <div id="bg-overlay"></div>
+</div>
+
 <!-- SETUP BANNER -->
 <div id="setup-banner">
   ⚠️ Firebase não configurado — os dados NÃO estão a ser partilhados. Edita o ficheiro e cola as tuas credenciais Firebase no topo.
@@ -344,6 +381,7 @@
     <div id="live-dot"></div>
     <span id="live-time">A ligar...</span>
   </div>
+  <button id="bg-toggle-btn" class="on" onclick="toggleBg()">🖼️ FUNDO ON</button>
   <button id="notif-btn" onclick="requestNotifPermission()" style="margin-left:12px;background:rgba(255,107,0,0.15);border:1px solid rgba(255,107,0,0.4);color:#FF6B00;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px;font-family:'Rajdhani',sans-serif;display:none;">
     🔔 ATIVAR ALERTAS
   </button>
@@ -492,6 +530,56 @@
 </div>
 
 <script>
+// ─── BACKGROUND SLIDESHOW ────────────────────────────────────────────────────
+const BG_SLIDES = document.querySelectorAll('.bg-slide');
+let bgIndex = 0;
+let bgOn = localStorage.getItem('tms_bg') !== 'off';
+
+function initBg() {
+  const btn = document.getElementById('bg-toggle-btn');
+  const el  = document.getElementById('bg-slideshow');
+  if (bgOn) {
+    el.classList.remove('hidden');
+    btn.classList.add('on');
+    btn.textContent = '🖼️ FUNDO ON';
+    if (BG_SLIDES.length) { BG_SLIDES[0].classList.add('active'); startSlideshow(); }
+  } else {
+    el.classList.add('hidden');
+    btn.classList.remove('on');
+    btn.textContent = '🖼️ FUNDO OFF';
+  }
+}
+
+let slideshowTimer = null;
+function startSlideshow() {
+  if (slideshowTimer) clearInterval(slideshowTimer);
+  slideshowTimer = setInterval(() => {
+    BG_SLIDES[bgIndex].classList.remove('active');
+    bgIndex = (bgIndex + 1) % BG_SLIDES.length;
+    BG_SLIDES[bgIndex].classList.add('active');
+  }, 5000);
+}
+
+function toggleBg() {
+  bgOn = !bgOn;
+  localStorage.setItem('tms_bg', bgOn ? 'on' : 'off');
+  const btn = document.getElementById('bg-toggle-btn');
+  const el  = document.getElementById('bg-slideshow');
+  if (bgOn) {
+    el.classList.remove('hidden');
+    btn.classList.add('on');
+    btn.textContent = '🖼️ FUNDO ON';
+    startSlideshow();
+  } else {
+    el.classList.add('hidden');
+    btn.classList.remove('on');
+    btn.textContent = '🖼️ FUNDO OFF';
+    if (slideshowTimer) clearInterval(slideshowTimer);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initBg);
+
 // ─── FIREBASE INIT ────────────────────────────────────────────────────────────
 const isConfigured = FIREBASE_CONFIG.apiKey !== "COLE_AQUI_apiKey";
 
