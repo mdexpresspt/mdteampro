@@ -646,12 +646,14 @@ if (isConfigured) {
     dot.classList.toggle('offline', !snap.val());
   });
 
-  // Histórico — fonte única de verdade para o modal
-  historicoRef.on('value', snap => {
+  // Histórico — usar path direto para garantir que apanha todos os nós
+  db.ref('ordens_historico').on('value', snap => {
     historico = [];
-    snap.forEach(child => historico.push({ _key: child.key, ...child.val() }));
+    snap.forEach(child => {
+      historico.push({ _key: child.key, ...child.val() });
+    });
     historico.sort((a,b) => b.ts - a.ts);
-    // Atualizar modal em tempo real se estiver aberto
+    console.log('historico listener fired, total:', historico.length);
     if (document.getElementById('hist-overlay').classList.contains('show')) renderHistorico();
   });
 }
