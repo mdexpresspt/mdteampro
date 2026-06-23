@@ -34,7 +34,9 @@
   #bg-slideshow.hidden { display: none; }
   .bg-slide {
     position: absolute; inset: 0;
-    background-size: cover; background-position: center;
+    background-size: contain;
+    background-position: center center;
+    background-repeat: no-repeat;
     opacity: 0; transition: opacity 1.5s ease;
   }
   .bg-slide.active { opacity: 0.25; }
