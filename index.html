@@ -212,8 +212,8 @@
     background: #0f172a;
     border: 1px solid rgba(255,107,0,0.3);
     border-radius: 16px;
-    width: 92%; max-width: 900px;
-    max-height: 85vh;
+    width: 92%; max-width: 960px;
+    height: 80vh;
     display: flex; flex-direction: column;
     box-shadow: 0 0 60px rgba(255,107,0,0.15), 0 24px 64px rgba(0,0,0,0.8);
     animation: popIn 0.25s cubic-bezier(0.175,0.885,0.32,1.275);
@@ -268,6 +268,7 @@
   #hist-body {
     overflow-y: auto;
     flex: 1;
+    min-height: 0;
   }
 
   .hist-status-ativa  { background: rgba(34,197,94,0.15);  color: #22c55e; }
@@ -473,7 +474,7 @@
       <button class="hist-filter-btn active" onclick="setHistFilter('todas', this)">Todas</button>
       <button class="hist-filter-btn" onclick="setHistFilter('ativas', this)">✅ Ativas</button>
       <button class="hist-filter-btn" onclick="setHistFilter('eliminadas', this)">🗑️ Eliminadas</button>
-      <input id="hist-search" type="text" placeholder="🔍 Pesquisar por matrícula, pessoa, referência..." oninput="buildTodosErender()" style="width:300px;">
+      <input id="hist-search" type="text" placeholder="🔍 Pesquisar por matrícula, pessoa, referência..." oninput="renderHistorico()" style="width:300px;">
     </div>
     <div id="hist-body"></div>
   </div>
@@ -621,7 +622,7 @@ if (isConfigured) {
     snap.forEach(child => ordens.push({ _key: child.key, ...child.val() }));
     ordens.sort((a,b) => b.ts - a.ts);
     renderOrdens();
-    if (document.getElementById('hist-overlay').classList.contains('show')) buildTodosErender();
+    if (document.getElementById('hist-overlay').classList.contains('show')) renderHistorico();
   });
 
   vansRef.on('value', snap => {
@@ -645,12 +646,13 @@ if (isConfigured) {
     dot.classList.toggle('offline', !snap.val());
   });
 
-  // Histórico
+  // Histórico — fonte única de verdade para o modal
   historicoRef.on('value', snap => {
     historico = [];
     snap.forEach(child => historico.push({ _key: child.key, ...child.val() }));
     historico.sort((a,b) => b.ts - a.ts);
-    if (document.getElementById('hist-overlay').classList.contains('show')) buildTodosErender();
+    // Atualizar modal em tempo real se estiver aberto
+    if (document.getElementById('hist-overlay').classList.contains('show')) renderHistorico();
   });
 }
 
@@ -812,36 +814,14 @@ function renderOrdens() {
 
 
 // ─── HISTÓRICO ───────────────────────────────────────────────────────────────
-let todosMerged = [];
-
-function buildTodosErender() {
-  // Fonte 1: ordens ATIVAS de /ordens (inclui ordens antigas que nunca passaram pelo histórico)
-  const merged = {};
-  ordens.forEach(o => {
-    const k = o._key || String(o.id);
-    merged[k] = { ...o, estado: 'ativa' };
-  });
-
-  // Fonte 2: /ordens_historico (tem estado: 'ativa' ou 'eliminada')
-  // As eliminadas não estão em /ordens — só aqui
-  historico.forEach(h => {
-    const k = h._key || String(h.id);
-    if (h.estado === 'eliminada') {
-      // Eliminada: mostrar sempre do histórico
-      merged[k] = h;
-    } else {
-      // Ativa no histórico: só adicionar se não já veio de /ordens
-      if (!merged[k]) merged[k] = h;
-    }
-  });
-
-  todosMerged = Object.values(merged).sort((a, b) => b.ts - a.ts);
-  renderHistorico();
-}
+// /ordens_historico é a fonte única de verdade.
+// Ao inserir: guarda lá com estado='ativa'.
+// Ao eliminar: lê de /ordens, guarda em /ordens_historico com estado='eliminada', remove de /ordens.
+// O modal lê diretamente de `historico` (sync com Firebase via listener).
 
 function openHistorico() {
   document.getElementById('hist-overlay').classList.add('show');
-  buildTodosErender();
+  renderHistorico();
 }
 function closeHistorico() {
   document.getElementById('hist-overlay').classList.remove('show');
@@ -853,20 +833,17 @@ function setHistFilter(filter, btn) {
   histFilter = filter;
   document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderHistorico(); // só re-filtra, não refaz o merge
+  renderHistorico();
 }
-
 function deleteFromHistorico(key) {
-  if (!confirm('Apagar permanentemente do histórico? Esta ação não pode ser desfeita.')) return;
+  if (!confirm('Apagar permanentemente do histórico?')) return;
   if (isConfigured) {
     historicoRef.child(key).remove();
   } else {
     historico = historico.filter(h => (h._key || String(h.id)) !== key);
-    todosMerged = todosMerged.filter(h => (h._key || String(h.id)) !== key);
     renderHistorico();
   }
 }
-
 function restoreOrdem(key) {
   if (isConfigured) {
     historicoRef.child(key).once('value', snap => {
@@ -882,15 +859,16 @@ function restoreOrdem(key) {
       historico[idx] = { ...historico[idx], estado: 'ativa', eliminadaTs: null };
       ordens = [{ ...historico[idx] }, ...ordens];
       renderOrdens();
+      renderHistorico();
     }
-    buildTodosErender();
   }
 }
 
 function renderHistorico() {
+  // Usa `historico` directamente — já está sorted por ts desc pelo listener
   const search = (document.getElementById('hist-search')?.value || '').toLowerCase().trim();
 
-  let filtered = todosMerged.filter(o => {
+  let filtered = historico.filter(o => {
     if (histFilter === 'ativas'     && o.estado !== 'ativa')     return false;
     if (histFilter === 'eliminadas' && o.estado !== 'eliminada') return false;
     if (search) {
@@ -900,120 +878,109 @@ function renderHistorico() {
     return true;
   });
 
-  // Stats (sobre todos, sem filtro)
-  const nAtivas = todosMerged.filter(o => o.estado === 'ativa').length;
-  const nElim   = todosMerged.filter(o => o.estado === 'eliminada').length;
+  const nAtivas = historico.filter(o => o.estado === 'ativa').length;
+  const nElim   = historico.filter(o => o.estado === 'eliminada').length;
   document.getElementById('hist-stat-ativa').textContent = nAtivas + ' ativas';
   document.getElementById('hist-stat-elim').textContent  = nElim + ' eliminadas';
-  document.getElementById('hist-stat-total').textContent = todosMerged.length + ' total';
+  document.getElementById('hist-stat-total').textContent = historico.length + ' total';
 
   const body = document.getElementById('hist-body');
   body.innerHTML = '';
 
   if (!filtered.length) {
     body.innerHTML = '<div id="hist-empty">' +
-      (search ? 'Nenhuma ordem encontrada para "' + search + '"' : 'Nenhuma ordem no histórico') +
+      (search ? 'Sem resultados para "' + search + '"' : 'Nenhuma ordem no histórico ainda.') +
       '</div>';
     return;
   }
 
-  const table = document.createElement('table');
-  table.id = 'hist-table';
-  table.innerHTML = `<thead><tr>
-    <th>Estado</th>
-    <th>Matrícula / Transportador</th>
-    <th>Pessoa</th>
-    <th>Preço</th>
-    <th>Custo</th>
-    <th>Referência</th>
-    <th>Criada</th>
-    <th>Eliminada</th>
-    <th></th>
-  </tr></thead>`;
-
-  const tbody = document.createElement('tbody');
+  // Lista simples em cascata, uma por linha
+  const ul = document.createElement('div');
+  ul.style.cssText = 'display:flex;flex-direction:column;';
 
   filtered.forEach(function(o) {
     const key = o._key || String(o.id);
     const isElim = o.estado === 'eliminada';
-    const tr = document.createElement('tr');
-    tr.className = isElim ? 'row-elim' : '';
 
-    // Estado
-    const tdEstado = document.createElement('td');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.15s;flex-wrap:wrap;' + (isElim ? 'opacity:0.75;' : '');
+    row.onmouseenter = function() { this.style.background='rgba(255,255,255,0.03)'; };
+    row.onmouseleave = function() { this.style.background=''; };
+
+    // Estado badge
     const badge = document.createElement('span');
     badge.className = 'badge ' + (isElim ? 'hist-status-elim' : 'hist-status-ativa');
+    badge.style.minWidth = '90px';
     badge.textContent = isElim ? '🗑️ Eliminada' : '✅ Ativa';
-    tdEstado.appendChild(badge);
-    tr.appendChild(tdEstado);
+    row.appendChild(badge);
 
     // Matrícula
-    const tdMat = document.createElement('td');
-    tdMat.innerHTML = o.matricula
-      ? '<span class="hist-row-mat">🚛 ' + o.matricula + '</span>'
-      : '<span class="hist-row-mat sem">—</span>';
-    tr.appendChild(tdMat);
+    const mat = document.createElement('span');
+    mat.style.cssText = 'font-weight:700;font-size:14px;color:#f1f5f9;min-width:130px;';
+    mat.textContent = o.matricula ? '🚛 ' + o.matricula : '—';
+    row.appendChild(mat);
 
     // Pessoa
-    const tdPessoa = document.createElement('td');
-    tdPessoa.style.color = '#94a3b8';
-    tdPessoa.textContent = o.pessoa || '—';
-    tr.appendChild(tdPessoa);
+    if (o.pessoa) {
+      const p = document.createElement('span');
+      p.className = 'badge badge-purple';
+      p.textContent = '👤 ' + o.pessoa;
+      row.appendChild(p);
+    }
 
     // Preço
-    const tdPreco = document.createElement('td');
-    if (o.preco) { const s = document.createElement('span'); s.className = 'badge badge-green'; s.textContent = '💶 ' + o.preco + '€'; tdPreco.appendChild(s); }
-    else { tdPreco.textContent = '—'; tdPreco.style.color = '#475569'; }
-    tr.appendChild(tdPreco);
+    if (o.preco) {
+      const s = document.createElement('span');
+      s.className = 'badge badge-green';
+      s.textContent = '💶 ' + o.preco + '€';
+      row.appendChild(s);
+    }
 
     // Custo
-    const tdCusto = document.createElement('td');
-    if (o.custo) { const s = document.createElement('span'); s.className = 'badge badge-amber'; s.textContent = '💰 ' + o.custo + '€'; tdCusto.appendChild(s); }
-    else { tdCusto.textContent = '—'; tdCusto.style.color = '#475569'; }
-    tr.appendChild(tdCusto);
+    if (o.custo) {
+      const s = document.createElement('span');
+      s.className = 'badge badge-amber';
+      s.textContent = '💰 ' + o.custo + '€';
+      row.appendChild(s);
+    }
 
     // Ref
-    const tdRef = document.createElement('td');
-    tdRef.style.cssText = 'color:#64748b;font-size:11px;max-width:160px;word-break:break-all;';
-    tdRef.textContent = o.ref || '—';
-    tr.appendChild(tdRef);
+    if (o.ref) {
+      const r = document.createElement('span');
+      r.style.cssText = 'color:#64748b;font-size:12px;flex:1;';
+      r.textContent = '📧 ' + o.ref;
+      row.appendChild(r);
+    }
 
-    // Criada
-    const tdCriada = document.createElement('td');
-    tdCriada.style.cssText = 'color:#475569;font-size:11px;white-space:nowrap;';
-    tdCriada.textContent = formatTime(o.ts);
-    tr.appendChild(tdCriada);
+    // Datas
+    const datas = document.createElement('span');
+    datas.style.cssText = 'color:#475569;font-size:11px;white-space:nowrap;margin-left:auto;';
+    datas.textContent = formatTime(o.ts);
+    if (isElim && o.eliminadaTs) datas.textContent += ' → 🗑️ ' + formatTime(o.eliminadaTs);
+    row.appendChild(datas);
 
-    // Eliminada
-    const tdElim = document.createElement('td');
-    tdElim.style.cssText = 'color:rgba(239,68,68,0.6);font-size:11px;white-space:nowrap;';
-    tdElim.textContent = (isElim && o.eliminadaTs) ? formatTime(o.eliminadaTs) : '—';
-    tr.appendChild(tdElim);
-
-    // Ações
-    const tdAcoes = document.createElement('td');
-    const actions = document.createElement('div');
-    actions.className = 'hist-row-actions';
+    // Botões
+    const btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:6px;';
     if (isElim) {
       const rb = document.createElement('button');
       rb.className = 'restore-btn';
       rb.textContent = '↩️ Restaurar';
       (function(k) { rb.onclick = function() { restoreOrdem(k); }; })(key);
-      actions.appendChild(rb);
+      btns.appendChild(rb);
     }
     const ab = document.createElement('button');
     ab.className = 'hist-apagar-btn';
-    ab.textContent = '✕ Apagar';
+    ab.textContent = '✕';
+    ab.title = 'Apagar do histórico';
     (function(k) { ab.onclick = function() { deleteFromHistorico(k); }; })(key);
-    actions.appendChild(ab);
-    tdAcoes.appendChild(actions);
-    tr.appendChild(tdAcoes);
+    btns.appendChild(ab);
+    row.appendChild(btns);
 
-    tbody.appendChild(tr);
+    ul.appendChild(row);
   });
 
-  table.appendChild(tbody);
-  body.appendChild(table);
+  body.appendChild(ul);
 }
 
 
