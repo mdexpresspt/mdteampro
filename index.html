@@ -1118,6 +1118,13 @@ function deiUpdate(mat) {
 }
 
 function deleteVan(mat) {
+  // Limpar todos os alertas disparados para esta carrinha
+  [...firedAlerts].forEach(k => {
+    if (k.startsWith(mat + '_') || k.includes('_' + mat + '_')) firedAlerts.delete(k);
+  });
+  // Limpar também alertas globais para não repetir
+  localStorage.setItem('tms_fired_v3', JSON.stringify([...firedAlerts].slice(-500)));
+
   if (isConfigured) vansRef.child(mat).remove();
   else { vans = vans.filter(v => v.matricula !== mat); renderVans(); }
 }
@@ -1226,10 +1233,9 @@ function checkVanAlerts() {
         if (!firedAlerts.has(key)) {
           firedAlerts.add(key);
           localStorage.setItem('tms_fired_v3', JSON.stringify([...firedAlerts].slice(-500)));
+          // Só disparar se houver carrinhas registadas
           if (vans.length > 0) {
             vans.forEach(van => pushNotif('van', `${van.matricula} — ⏰ Alerta ${alertTime} · Update necessário!`));
-          } else {
-            pushNotif('van', `⏰ Alerta ${alertTime} · Update necessário!`);
           }
         }
       }
