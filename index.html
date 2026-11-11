@@ -1226,7 +1226,7 @@ function loadDispatch(force) {
   if (!force && dispatchLoadedFor === target) return;
   dispatchLoadedFor = target;
   const frame = document.getElementById('dispatch-frame');
-  frame.src = 'dispatch.html' + (target !== currentUser.uid ? '?uid=' + encodeURIComponent(target) : '');
+  frame.src = 'dispatch.html?v=' + Date.now() + (target !== currentUser.uid ? '&uid=' + encodeURIComponent(target) : '');
 }
 
 function changeDispatchUser() { loadDispatch(true); }
