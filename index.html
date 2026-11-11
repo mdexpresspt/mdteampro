@@ -376,7 +376,8 @@
   #dispatch-bar.show { display: flex; }
   #dispatch-user-select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px 12px; color: #f1f5f9; font-size: 13px; outline: none; }
   #dispatch-user-select option { background: #0f172a; }
-  #dispatch-frame { width: 100%; height: calc(100vh - 200px); min-height: 640px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; background: #0E1013; display: block; }
+  #dispatch-frame { width: 100%; height: calc(100vh - 200px); min-height: 640px; border: 0; background: transparent; display: block; }
+  #dispatch-bar.show ~ #dispatch-frame { height: calc(100vh - 252px); }
 </style>
 </head>
 <body>
@@ -454,7 +455,7 @@
       <label for="dispatch-user-select">👑 Ver pedidos de:</label>
       <select id="dispatch-user-select" onchange="changeDispatchUser()"></select>
     </div>
-    <iframe id="dispatch-frame" title="Dispatch Desk" src="about:blank"></iframe>
+    <iframe id="dispatch-frame" title="Dispatch Desk" src="about:blank" allowtransparency="true"></iframe>
   </div>
 
   <!-- NOTAS TAB -->
