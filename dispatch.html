@@ -16,6 +16,7 @@
   input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
   input:focus, select:focus, textarea:focus { border-color: #FF6B00 !important; }
   button:not(:disabled):hover { filter: brightness(1.12); }
+  @media (max-width: 760px) { .dd-sidebar-noprint { min-height: 0 !important; width: auto !important; } }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 6px; }
@@ -407,11 +408,38 @@ window.addEventListener("error", function (e) {
     return realRemove.apply(this, arguments);
   };
 
-  var chip = document.createElement("div");
-  chip.id = "dd-sync";
-  chip.style.cssText = "position:fixed;right:12px;bottom:10px;font:11px sans-serif;color:#64748b;background:rgba(14,16,19,0.85);padding:4px 9px;border-radius:6px;z-index:2000;pointer-events:none;";
-  document.body.appendChild(chip);
-  function status(t) { chip.textContent = t; }
+  var inFrame = window.top !== window;
+  var chip = null;
+  if (!inFrame) {
+    chip = document.createElement("div");
+    chip.id = "dd-sync";
+    chip.style.cssText = "position:fixed;right:12px;bottom:10px;font:11px sans-serif;color:#64748b;background:rgba(14,16,19,0.85);padding:4px 9px;border-radius:6px;z-index:2000;pointer-events:none;";
+    document.body.appendChild(chip);
+  }
+  function status(t) {
+    if (inFrame) { try { if (parent.ddStatus) parent.ddStatus(t); } catch (e) {} }
+    else if (chip) chip.textContent = t;
+  }
+
+  // Dentro do dashboard: o iframe cresce com o conteúdo, para haver um único scroll (o da página).
+  if (inFrame) {
+    var fe = null;
+    try { fe = window.frameElement; } catch (e) {}
+    try { document.documentElement.style.setProperty("--parent-vh", parent.innerHeight + "px"); } catch (e) {}
+    if (fe) {
+      var fitted = false;
+      var fit = function () {
+        var h = Math.ceil(root.getBoundingClientRect().height);
+        if (!h) return;
+        if (Math.abs(fe.offsetHeight - h) > 1) fe.style.height = h + "px";
+        if (!fitted) { fitted = true; document.documentElement.style.overflow = "hidden"; }
+      };
+      window.__ddFit = fit;
+      if (window.ResizeObserver) new ResizeObserver(fit).observe(root);
+      setInterval(fit, 700);
+      fit();
+    }
+  }
 
   function flush(k) {
     if (!basePath) return;
@@ -458,7 +486,7 @@ window.addEventListener("error", function (e) {
         cache = snap.val() || {};
         start();
         status("☁️ Guardado");
-        if (viewingOther) {
+        if (viewingOther && !inFrame) {
           db.ref("users/" + target + "/email").once("value").then(function (s) {
             var b = document.createElement("div");
             b.style.cssText = "position:fixed;left:12px;bottom:10px;font:12px sans-serif;color:#0a0f1a;background:#FF6B00;padding:5px 11px;border-radius:6px;z-index:2000;font-weight:600;";
@@ -848,7 +876,11 @@ function PartnersView({ partners, setPartners }) {
   function editPartner(p) {
     setEditingId(p.id);
     setForm({ name: p.name || "", phone: p.phone || "", vehicle: p.vehicle || "", capacity: p.capacity || "", baseLoc: p.baseLoc || "", notes: p.notes || "" });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    try {
+      if (window.frameElement) window.parent.scrollTo({ top: Math.max(0, window.frameElement.getBoundingClientRect().top + window.parent.scrollY - 90), behavior: "smooth" });
+      else window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+    }
   }
   function cancelEdit() {
     setForm(blank);
@@ -1918,7 +1950,7 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
       ),
       pendingIgn.length > 0 ? e("div", { style: { border: "1px solid #6B5326", background: "rgba(255,107,0,0.07)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 } },
         e("div", { style: { fontSize: 12.5, fontWeight: 700, color: "#FF6B00", marginBottom: 8 } }, "⚠ " + pendingIgn.length + " linha(s) que não consegui interpretar. Adiciona as que forem veículos:"),
-        e("div", { style: { display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflowY: "auto" } },
+        e("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
           pendingIgn.map((x) => e("div", { key: x.i, style: { display: "flex", alignItems: "center", gap: 8 } },
             e("div", { style: { flex: 1, minWidth: 0, fontSize: 12.5, color: "#f1f5f9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, title: x.text }, x.text),
             e("button", { style: S.iconBtn, onClick: () => addIgnored(x) }, "＋ Adicionar"),
@@ -1926,7 +1958,7 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
           ))
         )
       ) : null,
-      shown.length === 0 ? e("div", { style: S.hint }, only === "check" ? "Nada a confirmar." : "Não encontrei nenhum veículo neste texto. Cada linha precisa pelo menos da cidade, ex: Bremen 3 paletes.") : e("div", { style: { display: "flex", flexDirection: "column", gap: 8, maxHeight: "56vh", overflowY: "auto", paddingRight: 4 } }, shown.map(renderRow))
+      shown.length === 0 ? e("div", { style: S.hint }, only === "check" ? "Nada a confirmar." : "Não encontrei nenhum veículo neste texto. Cada linha precisa pelo menos da cidade, ex: Bremen 3 paletes.") : e("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, shown.map(renderRow))
     ) : null,
     e("div", { style: S.card },
       e("div", { style: S.rowBetween },
@@ -1937,7 +1969,7 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
         )
       ),
       active.length > 6 ? e("input", { style: { ...S.input, marginBottom: 12 }, value: q, onChange: (ev) => setQ(ev.target.value), placeholder: "Procurar na frota (cidade, país, matrícula, parceiro...)" }) : null,
-      active.length === 0 ? e("div", { style: S.hint }, "Ainda sem disponibilidades importadas. Cola uma lista acima.") : e("div", { style: { ...S.quoteList, maxHeight: "60vh", overflowY: "auto" } },
+      active.length === 0 ? e("div", { style: S.hint }, "Ainda sem disponibilidades importadas. Cola uma lista acima.") : e("div", { style: S.quoteList },
         activeShown.map((f) => e("div", { key: f.id, style: { ...S.quoteRow, cursor: "default", flexShrink: 0 } },
           e("div", { style: { flex: 1 } },
             e("div", { style: S.quoteSupplier }, fleetLocLabel(f), f.ref ? e("span", { style: pill }, f.ref) : null, f.dir && f.dir !== "ALL" ? e("span", { style: pill }, "→ " + f.dir) : null),
@@ -2295,7 +2327,7 @@ function DispatchDesk() {
   const isPartnersView = activeTabId === "partners";
   const isFleetView = activeTabId === "fleet";
   const isNewView = !isCalculatorView && !isSummaryView && !isEmailListsView && !isPartnersView && !isFleetView && (activeTabId === "new" || !shipments.some((sh) => sh.id === activeTabId));
-  return /* @__PURE__ */ React.createElement("div", { style: S.shell }, /* @__PURE__ */ React.createElement("div", { style: S.sidebar, className: "dd-sidebar-noprint" }, /* @__PURE__ */ React.createElement("button", { style: { ...S.primaryBtn, marginBottom: 10 }, onClick: () => setActiveTabId("new") }, "+ Novo pedido"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isCalculatorView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("calculator") }, "📐 Calculadora de Carga"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isSummaryView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("summary") }, "📋 Resumo"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isEmailListsView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("emaillists") }, "✉️ Listas de Email"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isFleetView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("fleet") }, "📥 Disponibilidades"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 14, ...isPartnersView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("partners") }, "🚚 Parceiros"), /* @__PURE__ */ React.createElement("div", { style: S.navList }, shipments.length === 0 && /* @__PURE__ */ React.createElement("div", { style: S.navEmpty }, "Sem pedidos ainda"), shipments.map((sh) => {
+  return /* @__PURE__ */ React.createElement("div", { style: S.shell }, /* @__PURE__ */ React.createElement("div", { id: "dd-sidebar", style: S.sidebar, className: "dd-sidebar-noprint" }, /* @__PURE__ */ React.createElement("button", { style: { ...S.primaryBtn, marginBottom: 10 }, onClick: () => setActiveTabId("new") }, "+ Novo pedido"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isCalculatorView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("calculator") }, "📐 Calculadora de Carga"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isSummaryView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("summary") }, "📋 Resumo"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isEmailListsView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("emaillists") }, "✉️ Listas de Email"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isFleetView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("fleet") }, "📥 Disponibilidades"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 14, ...isPartnersView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("partners") }, "🚚 Parceiros"), /* @__PURE__ */ React.createElement("div", { style: S.navList }, shipments.length === 0 && /* @__PURE__ */ React.createElement("div", { style: S.navEmpty }, "Sem pedidos ainda"), shipments.map((sh) => {
     const isActive = sh.id === activeTabId;
     return /* @__PURE__ */ React.createElement("div", { key: sh.id, style: { ...S.navItem, ...isActive ? S.navItemActive : {} }, onClick: () => setActiveTabId(sh.id) }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: S.navItemLabel }, sh.label.trim() ? sh.label.trim() : `${sh.pickupLoc || "?"} → ${sh.deliveryLoc || "?"}`), /* @__PURE__ */ React.createElement("div", { style: S.navItemSub }, sh.pickupLoc || "?", " → ", sh.deliveryLoc || "?")), /* @__PURE__ */ React.createElement("button", { style: S.tabClose, onClick: (e) => {
       e.stopPropagation();
@@ -2369,10 +2401,10 @@ function DispatchDesk() {
 const sans = "'Rajdhani', 'Oswald', sans-serif";
 const mono = sans;
 const S = {
-  shell: { display: "flex", gap: 24, minHeight: "100vh", background: "transparent", fontFamily: sans, color: "#f1f5f9" },
-  modalOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 },
+  shell: { display: "flex", gap: 24, alignItems: "flex-start", background: "transparent", fontFamily: sans, color: "#f1f5f9" },
+  modalOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, paddingLeft: 20, paddingRight: 20, paddingTop: "calc(var(--view-top, 0px) + var(--parent-vh, 800px) * 0.22)" },
   modalCard: { background: "#0f172a", border: "1px solid rgba(255,107,0,0.35)", borderRadius: 12, padding: 24, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.6)" },
-  sidebar: { width: 260, flexShrink: 0, background: "rgba(10,15,26,0.72)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "20px 16px", display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "calc(100vh - 6px)", overflowY: "auto", boxSizing: "border-box" },
+  sidebar: { width: 260, flexShrink: 0, background: "rgba(10,15,26,0.72)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "20px 16px", display: "flex", flexDirection: "column", minHeight: "calc(var(--parent-vh, 800px) - 120px)", boxSizing: "border-box", willChange: "transform" },
   sidebarHeader: { display: "flex", alignItems: "center", gap: 12, marginBottom: 26 },
   main: { flex: 1, minWidth: 0, padding: "0 0 24px", overflowY: "visible" },
   mainInner: { maxWidth: "none", margin: 0 },
@@ -2384,7 +2416,7 @@ const S = {
   settingsBtnWide: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 12px", cursor: "pointer", fontSize: 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#94a3b8", width: "100%", marginTop: "auto", fontFamily: sans },
   navBtn: { background: "rgba(255,255,255,0.05)", border: "1px solid transparent", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontSize: 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#94a3b8", width: "100%", textAlign: "left", fontFamily: sans },
   navBtnActive: { background: "#FF6B00", color: "#ffffff", border: "1px solid #FF6B00" },
-  navList: { display: "flex", flexDirection: "column", gap: 6, flex: 1, overflowY: "auto" },
+  navList: { display: "flex", flexDirection: "column", gap: 6, flex: 1 },
   navEmpty: { color: "#64748b", fontSize: 12.5, padding: "10px 2px" },
   navItem: { display: "flex", alignItems: "center", gap: 8, borderRadius: 8, padding: "10px 12px", cursor: "pointer", border: "1px solid transparent", background: "rgba(255,255,255,0.03)" },
   navItemActive: { background: "rgba(255,107,0,0.12)", border: "1px solid #FF6B00" },
