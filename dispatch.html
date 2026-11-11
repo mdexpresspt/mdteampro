@@ -4,12 +4,21 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dispatch Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
+<script>if (window.top === window) document.documentElement.style.background = '#0a0f1a';</script>
 <style>
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: #0E1013; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  html, body { margin: 0; background: transparent; font-family: 'Rajdhani', 'Oswald', sans-serif; color: #f1f5f9; }
+  input, select, textarea, button { font-family: 'Rajdhani', 'Oswald', sans-serif; }
+  input, select, textarea { color-scheme: dark; }
+  select option { background: #0f172a; color: #f1f5f9; }
+  input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
+  input:focus, select:focus, textarea:focus { border-color: #FF6B00 !important; }
+  button:not(:disabled):hover { filter: brightness(1.12); }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #2A2E33; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 6px; }
   .dd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px; align-items: start; }
   @media (max-width: 760px) {
     #root > div { flex-direction: column !important; }
@@ -358,7 +367,7 @@ window.addEventListener("error", function (e) {
   };
   var root = document.getElementById("root");
   function msg(html) {
-    root.innerHTML = '<div style="color:#8B9098;font-family:sans-serif;padding:32px;text-align:center;line-height:1.8;">' + html + '</div>';
+    root.innerHTML = '<div style="color:#94a3b8;font-family:sans-serif;padding:32px;text-align:center;line-height:1.8;">' + html + '</div>';
   }
   if (typeof firebase === "undefined") {
     msg("Não foi possível ligar ao Firebase. Verifica a ligação à internet e recarrega a página.");
@@ -400,7 +409,7 @@ window.addEventListener("error", function (e) {
 
   var chip = document.createElement("div");
   chip.id = "dd-sync";
-  chip.style.cssText = "position:fixed;right:12px;bottom:10px;font:11px sans-serif;color:#5F6369;background:rgba(14,16,19,0.85);padding:4px 9px;border-radius:6px;z-index:2000;pointer-events:none;";
+  chip.style.cssText = "position:fixed;right:12px;bottom:10px;font:11px sans-serif;color:#64748b;background:rgba(14,16,19,0.85);padding:4px 9px;border-radius:6px;z-index:2000;pointer-events:none;";
   document.body.appendChild(chip);
   function status(t) { chip.textContent = t; }
 
@@ -432,7 +441,7 @@ window.addEventListener("error", function (e) {
   auth.onAuthStateChanged(function (user) {
     if (started) { location.reload(); return; }
     if (!user) {
-      msg('Sessão não iniciada.<br><a href="index.html" target="_top" style="color:#E8A33D;">Entra no MD Team Pro</a> para usares o Dispatch Desk.');
+      msg('Sessão não iniciada.<br><a href="index.html" target="_top" style="color:#FF6B00;">Entra no MD Team Pro</a> para usares o Dispatch Desk.');
       return;
     }
     started = true;
@@ -452,7 +461,7 @@ window.addEventListener("error", function (e) {
         if (viewingOther) {
           db.ref("users/" + target + "/email").once("value").then(function (s) {
             var b = document.createElement("div");
-            b.style.cssText = "position:fixed;left:12px;bottom:10px;font:12px sans-serif;color:#0E1013;background:#E8A33D;padding:5px 11px;border-radius:6px;z-index:2000;font-weight:600;";
+            b.style.cssText = "position:fixed;left:12px;bottom:10px;font:12px sans-serif;color:#0a0f1a;background:#FF6B00;padding:5px 11px;border-radius:6px;z-index:2000;font-weight:600;";
             b.textContent = "👑 Modo administrador — a ver os pedidos de " + (s.val() || "outro utilizador");
             document.body.appendChild(b);
           }, function () {});
@@ -482,38 +491,6 @@ const emptyShipment = () => ({
   quotes: [],
   clientName: ""
 });
-function extractField(text, keywords) {
-  const lines = text.split(/\n+/);
-  for (const line of lines) {
-    const lower = line.toLowerCase();
-    for (const kw of keywords) {
-      const idx = lower.indexOf(kw);
-      if (idx !== -1) {
-        let rest = line.slice(idx + kw.length).trim();
-        rest = rest.replace(/^(at|em|no|na|:|-|–|—)\s*/i, "");
-        const parts = rest.split(/\s[-–—]\s/);
-        return { loc: (parts[0] || "").trim(), time: parts.slice(1).join(" - ").trim() };
-      }
-    }
-  }
-  return null;
-}
-function parseSupplierText(text) {
-  const result = { pickupLoc: "", pickupTime: "", deliveryLoc: "", deliveryTime: "", cargo: "", customs: "unspecified" };
-  const pickup = extractField(text, ["pickup", "levantamento", "carregamento", "carrega"]);
-  if (pickup) {
-    result.pickupLoc = pickup.loc;
-    result.pickupTime = pickup.time;
-  }
-  const delivery = extractField(text, ["delivery", "entrega"]);
-  if (delivery) {
-    result.deliveryLoc = delivery.loc;
-    result.deliveryTime = delivery.time;
-  }
-  const cargoMatch = text.match(/\d+\s*x\s*\d+\s*x\s*\d+\s*x?\s*cm[^\n]*/i) || text.match(/[^\n]*\d+(\.\d+)?\s*kg[^\n]*/i);
-  if (cargoMatch) result.cargo = cargoMatch[0].trim();
-  return result;
-}
 function boxFitsRotated(box, van) {
   const b = [box.length, box.width, box.height].map(Number).sort((a, c) => a - c);
   const v = [van.length, van.width, van.height].map(Number).sort((a, c) => a - c);
@@ -576,7 +553,7 @@ function isoProject(x, y, z) {
   const rad = Math.PI / 6;
   return [(x - y) * Math.cos(rad), (x + y) * Math.sin(rad) - z];
 }
-const BOX_COLORS = ["#E8A33D", "#5FAE7D", "#6FA8DC", "#C77DFF", "#F2789F", "#7DD3C0", "#F2A65A", "#9AA5FF"];
+const BOX_COLORS = ["#FF6B00", "#22c55e", "#6FA8DC", "#C77DFF", "#F2789F", "#7DD3C0", "#F2A65A", "#9AA5FF"];
 function CargoIsoView({ van, placed }) {
   const vL = parseFloat(van.length) || 0;
   const vW = parseFloat(van.width) || 0;
@@ -633,22 +610,24 @@ function CargoIsoView({ van, placed }) {
       fill: "#000000",
       opacity: 0.35
     }
-  ), wheels.map((w, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: w[0], cy: w[1], r: wheelR, fill: "#15171A", stroke: "#3E4247", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("circle", { cx: w[0], cy: w[1], r: wheelR * 0.42, fill: "#3E4247" }))), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cabFaces.right), fill: "#2A2E33", stroke: "#0E1013", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cabFaces.top), fill: "#33373D", stroke: "#0E1013", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cabFaces.front), fill: "#6FA8DC", opacity: 0.55, stroke: "#0E1013", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cargoFaces.top), fill: "#171A1E", opacity: 0.5, stroke: "#3E4247", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cargoFaces.right), fill: "#171A1E", opacity: 0.35, stroke: "#3E4247", strokeWidth: strokeW }), sortedPlaced.map((b, i) => {
+  ), wheels.map((w, i) => /* @__PURE__ */ React.createElement("g", { key: i }, /* @__PURE__ */ React.createElement("circle", { cx: w[0], cy: w[1], r: wheelR, fill: "#15171A", stroke: "#475569", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("circle", { cx: w[0], cy: w[1], r: wheelR * 0.42, fill: "#475569" }))), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cabFaces.right), fill: "rgba(255,255,255,0.1)", stroke: "#0a0f1a", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cabFaces.top), fill: "#33373D", stroke: "#0a0f1a", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cabFaces.front), fill: "#6FA8DC", opacity: 0.55, stroke: "#0a0f1a", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cargoFaces.top), fill: "rgba(255,255,255,0.03)", opacity: 0.5, stroke: "#475569", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cargoFaces.right), fill: "rgba(255,255,255,0.03)", opacity: 0.35, stroke: "#475569", strokeWidth: strokeW }), sortedPlaced.map((b, i) => {
     const faces = boxFaces(b.x, b.y, b.z, b.l, b.w, b.h);
     const color = BOX_COLORS[i % BOX_COLORS.length];
-    return /* @__PURE__ */ React.createElement("g", { key: b.id }, /* @__PURE__ */ React.createElement("polygon", { points: polyStr(faces.top), fill: color, opacity: 0.95, stroke: "#0E1013", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(faces.right), fill: color, opacity: 0.65, stroke: "#0E1013", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(faces.front), fill: color, opacity: 0.82, stroke: "#0E1013", strokeWidth: strokeW }));
-  }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cargoFaces.front), fill: "none", stroke: "#3E4247", strokeWidth: strokeW * 1.4 }));
+    return /* @__PURE__ */ React.createElement("g", { key: b.id }, /* @__PURE__ */ React.createElement("polygon", { points: polyStr(faces.top), fill: color, opacity: 0.95, stroke: "#0a0f1a", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(faces.right), fill: color, opacity: 0.65, stroke: "#0a0f1a", strokeWidth: strokeW }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(faces.front), fill: color, opacity: 0.82, stroke: "#0a0f1a", strokeWidth: strokeW }));
+  }), /* @__PURE__ */ React.createElement("polygon", { points: polyStr(cargoFaces.front), fill: "none", stroke: "#475569", strokeWidth: strokeW * 1.4 }));
 }
 function buildSupplierMessage(f, lang, translated) {
   const pickupLoc = (translated == null ? void 0 : translated.pickupLoc) || f.pickupLoc;
   const pickupTime = (translated == null ? void 0 : translated.pickupTime) || f.pickupTime;
   const deliveryLoc = (translated == null ? void 0 : translated.deliveryLoc) || f.deliveryLoc;
-  const deliveryTime = (translated == null ? void 0 : translated.deliveryTime) || f.deliveryTime;
-  const cargo = (translated == null ? void 0 : translated.cargo) || f.cargo;
-  const L = lang === "en" ? { title: "Transport Request", pLoc: "Pickup Location", pTime: "Pickup Date/Time", dLoc: "Delivery Location", dTime: "Delivery Date/Time", cargo: "Cargo", customsYes: "Customs: Required", customsNo: "Customs: Not required" } : { title: "Pedido de Transporte", pLoc: "Local de Carga", pTime: "Data/Hora de Carga", dLoc: "Local de Entrega", dTime: "Data/Hora de Entrega", cargo: "Carga", customsYes: "Customs: Necessário", customsNo: "Customs: Não necessário" };
-  const lines = [L.title, "", `📍 ${L.pLoc}: ${pickupLoc || "-"}`, `🗓️ ${L.pTime}: ${pickupTime || "-"}`, `📍 ${L.dLoc}: ${deliveryLoc || "-"}`];
-  if (cargo.trim()) lines.push(`📦 ${L.cargo}: ${cargo.trim()}`);
-  return lines.join("\n");
+  const cargo = ((translated == null ? void 0 : translated.cargo) || f.cargo || "").trim();
+  const L = lang === "en" ? { load: "Pickup", pLoc: "Pickup Location", dLoc: "Delivery Location", cargo: "Cargo" } : { load: "Carregar", pLoc: "Local de Carga", dLoc: "Local de Entrega", cargo: "Carga" };
+  return [
+    `🗓️ ${L.load}: ${(pickupTime || "").trim() || "-"}`,
+    `📍 ${L.pLoc}: ${(pickupLoc || "").trim() || "-"}`,
+    `🏁 ${L.dLoc}: ${(deliveryLoc || "").trim() || "-"}`,
+    `📦 ${L.cargo}: ${cargo || "-"}`
+  ].join("\n");
 }
 function buildEmail(sh, lang, chosen, translated) {
   var _a, _b;
@@ -927,7 +906,7 @@ function PartnersView({ partners, setPartners }) {
       const freeToday = !!availabilityOn(p, today);
       return e("div", { key: p.id, style: S.card },
         e("div", { style: S.rowBetween },
-          e("div", { style: { ...S.cardLabel, marginBottom: 4, color: "#EDEBE6", fontSize: 14, textTransform: "none", letterSpacing: 0 } }, p.name),
+          e("div", { style: { ...S.cardLabel, marginBottom: 4, color: "#f1f5f9", fontSize: 14, textTransform: "none", letterSpacing: 0 } }, p.name),
           e("div", { style: { display: "flex", gap: 8 } },
             e("button", { style: S.iconBtn, onClick: () => editPartner(p) }, "✏️ Editar"),
             e("button", { style: S.iconBtn, onClick: () => removePartner(p) }, "🗑 Remover")
@@ -940,14 +919,14 @@ function PartnersView({ partners, setPartners }) {
           p.phone ? e(React.Fragment, null, e("span", { style: S.dot }, "•"), e("span", null, p.phone)) : null
         ),
         p.notes ? e("div", { style: { ...S.ticketMeta, marginTop: 4 } }, e("span", null, p.notes)) : null,
-        e("div", { style: { ...S.badge, ...(freeToday ? S.badgeOk : {}), ...(freeToday ? {} : { background: "#0E1013", color: "#5F6369" }) } }, freeToday ? "✓ Disponível hoje" : "Sem disponibilidade hoje"),
+        e("div", { style: { ...S.badge, ...(freeToday ? S.badgeOk : {}), ...(freeToday ? {} : { background: "#0a0f1a", color: "#64748b" }) } }, freeToday ? "✓ Disponível hoje" : "Sem disponibilidade hoje"),
         e("div", { style: S.divider }),
         avail.length > 0 ? e("div", { style: S.quoteList },
           avail.map((a) => {
             const expired = (a.to || a.from) < today;
             return e("div", { key: a.id, style: { ...S.quoteRow, cursor: "default", opacity: expired ? 0.45 : 1 } },
               e("div", { style: { flex: 1 } },
-                e("div", { style: S.quoteSupplier }, a.from === a.to ? formatDatePT(a.from) : formatDatePT(a.from) + " → " + formatDatePT(a.to), expired ? e("span", { style: { ...S.bestTag, background: "#2A2E33", color: "#8B9098" } }, "expirada") : null),
+                e("div", { style: S.quoteSupplier }, a.from === a.to ? formatDatePT(a.from) : formatDatePT(a.from) + " → " + formatDatePT(a.to), expired ? e("span", { style: { ...S.bestTag, background: "rgba(255,255,255,0.1)", color: "#94a3b8" } }, "expirada") : null),
                 e("div", { style: S.quoteNotes }, "livre em: " + (a.loc || p.baseLoc || "—") + (a.note ? " · " + a.note : ""))
               ),
               e("button", { style: S.iconBtnSmall, onClick: () => removeAvail(p.id, a.id) }, "🗑")
@@ -1732,7 +1711,7 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
   const pendingIgn = parsed.ignored.map((x, i) => ({ ...x, i })).filter((x) => !dismissed[x.i]);
   const shown = only === "check" ? live.filter(needs) : live;
   const mini = { ...S.input, padding: "6px 8px", fontSize: 12.5 };
-  const pill = { ...S.bestTag, background: "#2A2E33", color: "#B0B4BA" };
+  const pill = { ...S.bestTag, background: "rgba(255,255,255,0.1)", color: "#94a3b8" };
   function resetAll() {
     setDropped({}); setEdits({}); setOpen({}); setExtras([]); setDismissed({}); setOnly("all");
   }
@@ -1833,34 +1812,34 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
         ),
         e("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
           e("input", { type: "date", style: { ...mini, width: 136 }, value: r.from || "", onChange: (ev) => setEdit(k, { from: ev.target.value, to: r.to && r.to >= ev.target.value ? r.to : ev.target.value }) }),
-          e("span", { style: { color: "#8B9098", fontSize: 12 } }, "→"),
+          e("span", { style: { color: "#94a3b8", fontSize: 12 } }, "→"),
           e("input", { type: "date", style: { ...mini, width: 136 }, value: r.to || "", min: r.from || undefined, onChange: (ev) => setEdit(k, { to: ev.target.value && ev.target.value >= r.from ? ev.target.value : r.from }) }),
           e("input", { type: "number", min: "0", step: "0.5", style: { ...mini, width: 64 }, value: r.pallets == null ? "" : r.pallets, placeholder: "Pal.", onChange: (ev) => setEdit(k, { pallets: ev.target.value === "" ? null : parseFloat(ev.target.value) }) }),
           e("input", { type: "time", style: { ...mini, width: 96 }, value: r.time || "", onChange: (ev) => setEdit(k, { time: ev.target.value }) }),
           e("input", { style: { ...mini, width: 112 }, value: r.type || "", placeholder: "Tipo (opcional)", onChange: (ev) => setEdit(k, { type: ev.target.value }) })
         ),
-        r.src ? e("div", { style: { fontSize: 11, color: "#5F6369", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, "linha original: " + r.src) : null
+        r.src ? e("div", { style: { fontSize: 11, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, "linha original: " + r.src) : null
       );
     }
     const detail = [r.type, r.pallets != null ? String(r.pallets).replace(".", ",") + " paletes" : "", r.payload != null ? String(r.payload).replace(".", ",") + " t" : "", r.note].filter(Boolean).join(" · ");
     return e("div", { key: k, style: box, title: r.src || "" },
       e("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
         e("div", { style: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
-          r.cc ? e("span", { style: pill }, r.cc) : e("span", { style: { ...pill, background: "#3A2F1A", color: "#E8A33D" } }, "??"),
-          e("span", { style: { fontSize: 14, fontWeight: 600, color: "#EDEBE6" } }, [r.postal, r.city].filter(Boolean).join(" ") || "(sem cidade)"),
+          r.cc ? e("span", { style: pill }, r.cc) : e("span", { style: { ...pill, background: "#3A2F1A", color: "#FF6B00" } }, "??"),
+          e("span", { style: { fontSize: 14, fontWeight: 600, color: "#f1f5f9" } }, [r.postal, r.city].filter(Boolean).join(" ") || "(sem cidade)"),
           r.ref ? e("span", { style: pill }, r.ref) : null,
           r.dir && r.dir !== "ALL" ? e("span", { style: pill }, "→ " + r.dir) : null,
           isExp(r) ? e("span", { style: pill }, "expirada") : null,
-          r.guess ? e("span", { style: { ...S.bestTag, background: "#3A2F1A", color: "#E8A33D" } }, (r.conflict ? "país não coincide com a cidade" : "cidade não reconhecida")) : null,
-          r.fuzzy && r.fuzzy !== r.city ? e("span", { style: { ...S.bestTag, background: "rgba(95,174,125,0.18)", color: "#5FAE7D" }, title: "Nome parecido encontrado" }, "≈ " + r.fuzzy) : null,
-          r.truncated ? e("span", { style: { ...S.bestTag, background: "#3A2F1A", color: "#E8A33D" } }, "linha cortada?") : null
+          r.guess ? e("span", { style: { ...S.bestTag, background: "#3A2F1A", color: "#FF6B00" } }, (r.conflict ? "país não coincide com a cidade" : "cidade não reconhecida")) : null,
+          r.fuzzy && r.fuzzy !== r.city ? e("span", { style: { ...S.bestTag, background: "rgba(34,197,94,0.18)", color: "#22c55e" }, title: "Nome parecido encontrado" }, "≈ " + r.fuzzy) : null,
+          r.truncated ? e("span", { style: { ...S.bestTag, background: "#3A2F1A", color: "#FF6B00" } }, "linha cortada?") : null
         ),
         e("div", { style: { ...S.quotePrice, fontSize: 12.5, whiteSpace: "nowrap" } }, dateRangeLabel(r.from, r.to) + (r.time ? " " + r.time : "")),
         e("button", { style: S.iconBtnSmall, title: "Corrigir", onClick: () => setOpen({ ...open, [k]: true }) }, "✏️"),
         e("button", { style: S.iconBtnSmall, title: "Ignorar esta linha", onClick: () => setDropped({ ...dropped, [k]: true }) }, "✕")
       ),
       detail ? e("div", { style: S.quoteNotes }, detail) : null,
-      r.src ? e("div", { style: { fontSize: 11, color: "#5F6369", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, r.src) : null
+      r.src ? e("div", { style: { fontSize: 11, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, r.src) : null
     );
   }
   const active = fleet.filter((f) => f.to >= today).sort((a, b) => a.from.localeCompare(b.from) || (a.cc || "").localeCompare(b.cc || "") || (a.city || "").localeCompare(b.city || ""));
@@ -1877,8 +1856,8 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
           "📷 Ler captura de ecrã",
           e("input", { type: "file", accept: "image/*", style: { display: "none" }, onChange: (ev) => { readImage(ev.target.files && ev.target.files[0]); ev.target.value = ""; } })
         ),
-        e("span", { style: { fontSize: 12, color: "#8B9098" } }, "ou cola (Ctrl+V) / arrasta a imagem para a caixa abaixo"),
-        ocr && ocr.state === "busy" ? e("span", { style: { fontSize: 12, color: "#E8A33D" } }, "A ler a imagem… " + ocr.pct + "%") : null,
+        e("span", { style: { fontSize: 12, color: "#94a3b8" } }, "ou cola (Ctrl+V) / arrasta a imagem para a caixa abaixo"),
+        ocr && ocr.state === "busy" ? e("span", { style: { fontSize: 12, color: "#FF6B00" } }, "A ler a imagem… " + ocr.pct + "%") : null,
         ocr && ocr.state === "ok" ? e("span", { style: { fontSize: 12, color: "#8BC48A" } }, "Imagem lida (" + ocr.lines + " linhas). Confere a revisão antes de guardar.") : null,
         ocr && ocr.state === "err" ? e("span", { style: { fontSize: 12, color: "#E07A5F" } }, ocr.msg) : null
       ),
@@ -1913,13 +1892,13 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
           e("input", { style: S.input, value: defCC, maxLength: 2, onChange: (ev) => setDefCC(ev.target.value.toUpperCase()), placeholder: "ex: ES" })
         )
       ),
-      text.trim() ? e("div", { style: { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", background: "#0E1013", border: "1px solid #2A2E33", borderRadius: 10, padding: "12px 14px" } },
-        e("div", { style: { flex: 1, minWidth: 240, fontSize: 13, lineHeight: 1.6, color: "#B0B4BA" } },
-          e("b", { style: { color: "#EDEBE6" } }, toSave.length + " veículo(s) a guardar"),
+      text.trim() ? e("div", { style: { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", background: "#0a0f1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "12px 14px" } },
+        e("div", { style: { flex: 1, minWidth: 240, fontSize: 13, lineHeight: 1.6, color: "#94a3b8" } },
+          e("b", { style: { color: "#f1f5f9" } }, toSave.length + " veículo(s) a guardar"),
           " (" + parsed.lines + " linhas no texto)",
-          expiredCount > 0 ? e("span", { style: { color: "#8B9098" } }, " · " + expiredCount + " já expirada(s), não guardadas") : null,
-          checkCount > 0 ? e("span", { style: { color: "#E8A33D" } }, " · " + checkCount + " a confirmar") : null,
-          pendingIgn.length > 0 ? e("span", { style: { color: "#E8A33D" } }, " · " + pendingIgn.length + " por interpretar") : null,
+          expiredCount > 0 ? e("span", { style: { color: "#94a3b8" } }, " · " + expiredCount + " já expirada(s), não guardadas") : null,
+          checkCount > 0 ? e("span", { style: { color: "#FF6B00" } }, " · " + checkCount + " a confirmar") : null,
+          pendingIgn.length > 0 ? e("span", { style: { color: "#FF6B00" } }, " · " + pendingIgn.length + " por interpretar") : null,
           e("label", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, marginTop: 2 } },
             e("input", { type: "checkbox", checked: replaceOld, onChange: (ev) => setReplaceOld(ev.target.checked) }),
             "Substituir a lista anterior deste parceiro" + (source.trim() ? "" : " (indica o parceiro)")
@@ -1933,15 +1912,15 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
       e("div", { style: { ...S.rowBetween, marginBottom: 12 } },
         e("div", { style: { ...S.cardLabel, marginBottom: 0 } }, "Revisão (" + parsed.headers + " cabeçalho(s)/título(s) de dia reconhecidos)"),
         e("div", { style: { display: "flex", gap: 8 } },
-          e("button", { style: { ...S.iconBtn, ...(only === "all" ? { color: "#E8A33D", borderColor: "#E8A33D" } : {}) }, onClick: () => setOnly("all") }, "Todas (" + live.length + ")"),
-          e("button", { style: { ...S.iconBtn, ...(only === "check" ? { color: "#E8A33D", borderColor: "#E8A33D" } : {}) }, onClick: () => setOnly("check") }, "A confirmar (" + checkCount + ")")
+          e("button", { style: { ...S.iconBtn, ...(only === "all" ? { color: "#FF6B00", borderColor: "#FF6B00" } : {}) }, onClick: () => setOnly("all") }, "Todas (" + live.length + ")"),
+          e("button", { style: { ...S.iconBtn, ...(only === "check" ? { color: "#FF6B00", borderColor: "#FF6B00" } : {}) }, onClick: () => setOnly("check") }, "A confirmar (" + checkCount + ")")
         )
       ),
-      pendingIgn.length > 0 ? e("div", { style: { border: "1px solid #6B5326", background: "rgba(232,163,61,0.07)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 } },
-        e("div", { style: { fontSize: 12.5, fontWeight: 700, color: "#E8A33D", marginBottom: 8 } }, "⚠ " + pendingIgn.length + " linha(s) que não consegui interpretar. Adiciona as que forem veículos:"),
+      pendingIgn.length > 0 ? e("div", { style: { border: "1px solid #6B5326", background: "rgba(255,107,0,0.07)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 } },
+        e("div", { style: { fontSize: 12.5, fontWeight: 700, color: "#FF6B00", marginBottom: 8 } }, "⚠ " + pendingIgn.length + " linha(s) que não consegui interpretar. Adiciona as que forem veículos:"),
         e("div", { style: { display: "flex", flexDirection: "column", gap: 6, maxHeight: 220, overflowY: "auto" } },
           pendingIgn.map((x) => e("div", { key: x.i, style: { display: "flex", alignItems: "center", gap: 8 } },
-            e("div", { style: { flex: 1, minWidth: 0, fontSize: 12.5, color: "#EDEBE6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, title: x.text }, x.text),
+            e("div", { style: { flex: 1, minWidth: 0, fontSize: 12.5, color: "#f1f5f9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, title: x.text }, x.text),
             e("button", { style: S.iconBtn, onClick: () => addIgnored(x) }, "＋ Adicionar"),
             e("button", { style: S.iconBtnSmall, title: "Não é um veículo", onClick: () => setDismissed({ ...dismissed, [x.i]: true }) }, "✕")
           ))
@@ -1966,7 +1945,7 @@ function FleetView({ fleet, setFleet, partners, setPartners }) {
           ),
           e("div", { style: S.quotePriceCol },
             e("div", { style: { ...S.quotePrice, fontSize: 12.5 } }, dateRangeLabel(f.from, f.to) + (f.time ? " " + f.time : "")),
-            e("div", { style: { ...S.quotePriceLabel, color: f.lat != null ? "#5FAE7D" : f.geoFail ? "#D9705A" : "#8B9098" } }, f.lat != null ? "📍 localizado" : f.geoFail ? "⚠ local não encontrado" : "⏳ a localizar...")
+            e("div", { style: { ...S.quotePriceLabel, color: f.lat != null ? "#22c55e" : f.geoFail ? "#ef4444" : "#94a3b8" } }, f.lat != null ? "📍 localizado" : f.geoFail ? "⚠ local não encontrado" : "⏳ a localizar...")
           ),
           e("button", { style: S.iconBtnSmall, title: "Corrigir localização", onClick: () => editLoc(f) }, "✏️"),
           e("button", { style: S.iconBtnSmall, title: "Remover", onClick: () => removeFleet(f.id) }, "🗑")
@@ -2048,7 +2027,7 @@ function PartnerSuggestions({ sh, partners, fleet, setActiveTabId }) {
     };
   }, [partners, fleet, date, searchLoc, minPallets, radius]);
   const baseMsg = buildSupplierMessage(sh, "pt", null);
-  const pill = { ...S.bestTag, background: "#2A2E33", color: "#B0B4BA" };
+  const pill = { ...S.bestTag, background: "rgba(255,255,255,0.1)", color: "#94a3b8" };
   const shown = results.slice(0, limit);
   return e("div", { style: S.card },
     e("div", { style: S.cardLabel }, "🚚 Veículos sugeridos (por proximidade)"),
@@ -2090,11 +2069,11 @@ function PartnerSuggestions({ sh, partners, fleet, setActiveTabId }) {
   );
 }
 
-function MsgToggle({ open, onToggle }) {
+function MsgToggle({ open, onToggle, labelOpen, labelClosed }) {
   return React.createElement("button", {
-    style: { background: "transparent", border: "1px solid #2A2E33", color: open ? "#E8A33D" : "#B0B4BA", borderRadius: 7, padding: "10px 14px", cursor: "pointer", fontSize: 13, fontWeight: 600, width: "100%", textAlign: "left" },
+    style: { background: open ? "rgba(255,107,0,0.12)" : "rgba(255,255,255,0.05)", border: "1px solid " + (open ? "#FF6B00" : "rgba(255,255,255,0.1)"), color: open ? "#FF6B00" : "#94a3b8", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", width: "100%", textAlign: "left", fontFamily: "inherit" },
     onClick: onToggle
-  }, open ? "▲ Esconder mensagem e preview" : "✉️ Mensagem e preview");
+  }, open ? (labelOpen || "▲ Esconder mensagem e preview") : (labelClosed || "✉️ Mensagem e preview"));
 }
 function DispatchDesk() {
   var _a;
@@ -2107,7 +2086,6 @@ function DispatchDesk() {
   });
   const [activeTabId, setActiveTabId] = useState(((_a = shipments[0]) == null ? void 0 : _a.id) || "new");
   const [form, setForm] = useState(emptyShipment());
-  const [pasteText, setPasteText] = useState("");
   const [quoteDrafts, setQuoteDrafts] = useState({});
   const [selectedQuote, setSelectedQuote] = useState({});
   const [emailLang, setEmailLang] = useState({});
@@ -2141,6 +2119,7 @@ function DispatchDesk() {
   const [selectedEmailListByShipment, setSelectedEmailListByShipment] = useState({});
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [openMsg, setOpenMsg] = useState({});
+  const [openVeh, setOpenVeh] = useState({});
   const [partners, setPartners] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(PARTNERS_STORAGE)) || [];
@@ -2257,18 +2236,12 @@ function DispatchDesk() {
     return c && c.sourceKey === sourceKey ? c.data : null;
   }
   const canCreate = form.pickupLoc.trim() && form.deliveryLoc.trim();
-  function applyPaste() {
-    if (!pasteText.trim()) return;
-    const parsed = parseSupplierText(pasteText);
-    setForm((f) => ({ ...f, ...parsed }));
-  }
   function addShipment() {
     if (!canCreate) return;
     const newShipment = { ...form, id: uid() };
     setShipments((s) => [newShipment, ...s]);
     setActiveTabId(newShipment.id);
     setForm(emptyShipment());
-    setPasteText("");
   }
   function removeShipment(id) {
     setShipments((s) => {
@@ -2322,7 +2295,7 @@ function DispatchDesk() {
   const isPartnersView = activeTabId === "partners";
   const isFleetView = activeTabId === "fleet";
   const isNewView = !isCalculatorView && !isSummaryView && !isEmailListsView && !isPartnersView && !isFleetView && (activeTabId === "new" || !shipments.some((sh) => sh.id === activeTabId));
-  return /* @__PURE__ */ React.createElement("div", { style: S.shell }, /* @__PURE__ */ React.createElement("div", { style: S.sidebar, className: "dd-sidebar-noprint" }, /* @__PURE__ */ React.createElement("div", { style: S.sidebarHeader }, /* @__PURE__ */ React.createElement("div", { style: S.headerIcon }, "✈️"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: S.title }, "Dispatch Desk"), /* @__PURE__ */ React.createElement("div", { style: S.subtitle }, "gestão de transportes"))), /* @__PURE__ */ React.createElement("button", { style: { ...S.primaryBtn, marginBottom: 10 }, onClick: () => setActiveTabId("new") }, "+ Novo pedido"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isCalculatorView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("calculator") }, "📐 Calculadora de Carga"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isSummaryView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("summary") }, "📋 Resumo"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isEmailListsView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("emaillists") }, "✉️ Listas de Email"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isFleetView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("fleet") }, "📥 Disponibilidades"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 14, ...isPartnersView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("partners") }, "🚚 Parceiros"), /* @__PURE__ */ React.createElement("div", { style: S.navList }, shipments.length === 0 && /* @__PURE__ */ React.createElement("div", { style: S.navEmpty }, "Sem pedidos ainda"), shipments.map((sh) => {
+  return /* @__PURE__ */ React.createElement("div", { style: S.shell }, /* @__PURE__ */ React.createElement("div", { style: S.sidebar, className: "dd-sidebar-noprint" }, /* @__PURE__ */ React.createElement("button", { style: { ...S.primaryBtn, marginBottom: 10 }, onClick: () => setActiveTabId("new") }, "+ Novo pedido"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isCalculatorView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("calculator") }, "📐 Calculadora de Carga"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isSummaryView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("summary") }, "📋 Resumo"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isEmailListsView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("emaillists") }, "✉️ Listas de Email"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 4, ...isFleetView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("fleet") }, "📥 Disponibilidades"), /* @__PURE__ */ React.createElement("button", { style: { ...S.navBtn, marginBottom: 14, ...isPartnersView ? S.navBtnActive : {} }, onClick: () => setActiveTabId("partners") }, "🚚 Parceiros"), /* @__PURE__ */ React.createElement("div", { style: S.navList }, shipments.length === 0 && /* @__PURE__ */ React.createElement("div", { style: S.navEmpty }, "Sem pedidos ainda"), shipments.map((sh) => {
     const isActive = sh.id === activeTabId;
     return /* @__PURE__ */ React.createElement("div", { key: sh.id, style: { ...S.navItem, ...isActive ? S.navItemActive : {} }, onClick: () => setActiveTabId(sh.id) }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: S.navItemLabel }, sh.label.trim() ? sh.label.trim() : `${sh.pickupLoc || "?"} → ${sh.deliveryLoc || "?"}`), /* @__PURE__ */ React.createElement("div", { style: S.navItemSub }, sh.pickupLoc || "?", " → ", sh.deliveryLoc || "?")), /* @__PURE__ */ React.createElement("button", { style: S.tabClose, onClick: (e) => {
       e.stopPropagation();
@@ -2332,7 +2305,7 @@ function DispatchDesk() {
     setApiKeyInput(apiKey);
     setShowSettings((s) => !s);
   } }, "⚙️ Definições")), /* @__PURE__ */ React.createElement("div", { style: S.main }, /* @__PURE__ */ React.createElement("div", { style: S.mainInner }, showSettings && /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Tradução automática (opcional)"), /* @__PURE__ */ React.createElement("div", { style: S.hint }, "Para traduzir automaticamente o texto que escreves (não só os rótulos), cola aqui a tua chave da API da Anthropic. Fica guardada só neste browser. Sem chave, os botões PT/EN continuam a trocar o modelo da mensagem, mas o texto que escreveste mantém-se como o inseriste."), /* @__PURE__ */ React.createElement("input", { style: { ...S.input, marginTop: 10, marginBottom: 10 }, type: "password", placeholder: "sk-ant-...", value: apiKeyInput, onChange: (e) => setApiKeyInput(e.target.value) }), /* @__PURE__ */ React.createElement("button", { style: S.primaryBtn, onClick: saveApiKey }, "Guardar chave")), isSummaryView && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.pageHeading }, "Resumo dos pedidos"), /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.rowBetween }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Todos os pedidos ativos"), /* @__PURE__ */ React.createElement("button", { style: { ...S.iconBtn }, onClick: () => window.print() }, "🖨️ Imprimir / PDF")), /* @__PURE__ */ React.createElement("pre", { style: S.emailBox }, buildFullSummary(shipments)), /* @__PURE__ */ React.createElement(CopyBtn, { text: buildFullSummary(shipments), label: "Copiar resumo completo" })), shipments.map((sh) => {
-    return /* @__PURE__ */ React.createElement("div", { key: sh.id, style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, sh.label.trim() || `${sh.pickupLoc || "?"} → ${sh.deliveryLoc || "?"}`), /* @__PURE__ */ React.createElement("div", { style: S.ticketMeta }, /* @__PURE__ */ React.createElement("span", null, sh.pickupLoc || "?", " → ", sh.deliveryLoc || "?"), /* @__PURE__ */ React.createElement("span", { style: S.dot }, "•"), /* @__PURE__ */ React.createElement("span", null, sh.pickupTime || "sem hora de carga"), /* @__PURE__ */ React.createElement("span", { style: S.dot }, "•"), /* @__PURE__ */ React.createElement("span", null, sh.deliveryTime || "sem hora de entrega")), sh.cargo && /* @__PURE__ */ React.createElement("div", { style: { ...S.ticketMeta, marginTop: 4 } }, /* @__PURE__ */ React.createElement("span", null, sh.cargo)), false && /* @__PURE__ */ React.createElement("div", { style: { ...S.badge, ...sh.customs === "yes" ? S.badgeWarn : S.badgeOk } }, sh.customs === "yes" ? "Customs necessário" : "Sem customs"), /* @__PURE__ */ React.createElement("div", { style: S.divider }), sh.quotes.length > 0 ? /* @__PURE__ */ React.createElement("div", { style: S.quoteList }, sh.quotes.slice().sort((a, b) => a.costPrice - b.costPrice).map((q) => /* @__PURE__ */ React.createElement("div", { key: q.id, style: { ...S.quoteRow, cursor: "default" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: S.quoteSupplier }, q.supplier), (q.pickupTime || q.deliveryTime) && /* @__PURE__ */ React.createElement("div", { style: S.quoteNotes }, q.pickupTime && /* @__PURE__ */ React.createElement(React.Fragment, null, "carga: ", q.pickupTime), q.pickupTime && q.deliveryTime && " · ", q.deliveryTime && /* @__PURE__ */ React.createElement(React.Fragment, null, "entrega: ", q.deliveryTime)), sh.clientName.trim() && /* @__PURE__ */ React.createElement("div", { style: S.quoteNotes }, "Cliente: ", sh.clientName.trim())), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceCol }, /* @__PURE__ */ React.createElement("div", { style: S.quotePrice }, "€", q.costPrice.toLocaleString("en-US")), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceLabel }, "fornecedor"), q.sellPrice != null && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { ...S.quotePrice, color: "#5FAE7D" } }, "€", q.sellPrice.toLocaleString("en-US")), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceLabel }, "cliente")))))) : /* @__PURE__ */ React.createElement("div", { style: S.hint }, "Sem cotações ainda."));
+    return /* @__PURE__ */ React.createElement("div", { key: sh.id, style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, sh.label.trim() || `${sh.pickupLoc || "?"} → ${sh.deliveryLoc || "?"}`), /* @__PURE__ */ React.createElement("div", { style: S.ticketMeta }, /* @__PURE__ */ React.createElement("span", null, sh.pickupLoc || "?", " → ", sh.deliveryLoc || "?"), /* @__PURE__ */ React.createElement("span", { style: S.dot }, "•"), /* @__PURE__ */ React.createElement("span", null, sh.pickupTime || "sem hora de carga"), /* @__PURE__ */ React.createElement("span", { style: S.dot }, "•"), /* @__PURE__ */ React.createElement("span", null, sh.deliveryTime || "sem hora de entrega")), sh.cargo && /* @__PURE__ */ React.createElement("div", { style: { ...S.ticketMeta, marginTop: 4 } }, /* @__PURE__ */ React.createElement("span", null, sh.cargo)), false && /* @__PURE__ */ React.createElement("div", { style: { ...S.badge, ...sh.customs === "yes" ? S.badgeWarn : S.badgeOk } }, sh.customs === "yes" ? "Customs necessário" : "Sem customs"), /* @__PURE__ */ React.createElement("div", { style: S.divider }), sh.quotes.length > 0 ? /* @__PURE__ */ React.createElement("div", { style: S.quoteList }, sh.quotes.slice().sort((a, b) => a.costPrice - b.costPrice).map((q) => /* @__PURE__ */ React.createElement("div", { key: q.id, style: { ...S.quoteRow, cursor: "default" } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: S.quoteSupplier }, q.supplier), (q.pickupTime || q.deliveryTime) && /* @__PURE__ */ React.createElement("div", { style: S.quoteNotes }, q.pickupTime && /* @__PURE__ */ React.createElement(React.Fragment, null, "carga: ", q.pickupTime), q.pickupTime && q.deliveryTime && " · ", q.deliveryTime && /* @__PURE__ */ React.createElement(React.Fragment, null, "entrega: ", q.deliveryTime)), sh.clientName.trim() && /* @__PURE__ */ React.createElement("div", { style: S.quoteNotes }, "Cliente: ", sh.clientName.trim())), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceCol }, /* @__PURE__ */ React.createElement("div", { style: S.quotePrice }, "€", q.costPrice.toLocaleString("en-US")), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceLabel }, "fornecedor"), q.sellPrice != null && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { ...S.quotePrice, color: "#22c55e" } }, "€", q.sellPrice.toLocaleString("en-US")), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceLabel }, "cliente")))))) : /* @__PURE__ */ React.createElement("div", { style: S.hint }, "Sem cotações ainda."));
   }), shipments.length === 0 && /* @__PURE__ */ React.createElement("div", { style: S.empty }, "Ainda sem pedidos para mostrar no resumo.")), isEmailListsView && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.pageHeading }, "Listas de Email"), /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Nova lista"), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Field, { label: "Nome da lista" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: newListName, onChange: (e) => setNewListName(e.target.value), placeholder: "ex: Fornecedores UE" }))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Field, { label: "Emails (um por linha, ou separados por vírgula)" }, /* @__PURE__ */ React.createElement("textarea", { style: S.textarea, rows: 4, value: newListEmailsText, onChange: (e) => setNewListEmailsText(e.target.value), placeholder: "fornecedor1@exemplo.com\nfornecedor2@exemplo.com" }))), /* @__PURE__ */ React.createElement("button", { style: S.primaryBtn, onClick: addEmailList }, "+ Criar lista")), emailLists.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: S.empty }, "Ainda sem listas guardadas.") : emailLists.map((l) => /* @__PURE__ */ React.createElement("div", { key: l.id, style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.rowBetween }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, l.name, " (", l.emails.length, ")"), /* @__PURE__ */ React.createElement("button", { style: S.iconBtn, onClick: () => deleteEmailList(l.id) }, "🗑 Remover")), /* @__PURE__ */ React.createElement("div", { style: S.hint }, l.emails.join(", "))))), isFleetView && React.createElement(FleetView, { fleet, setFleet, partners, setPartners }), isPartnersView && React.createElement(PartnersView, { partners, setPartners }), isCalculatorView && (() => {
     const hasVan = currentVan.length && currentVan.width && currentVan.height;
     const pack = hasVan && cargoItems.length > 0 ? packBoxes(currentVan, cargoItems) : { placed: [], unplaced: [] };
@@ -2344,18 +2317,9 @@ function DispatchDesk() {
     const overall = allPlaced && fitsByWeight !== false;
     return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.pageHeading }, "Calculadora de Carga"), /* @__PURE__ */ React.createElement("div", { className: "dd-grid" }, /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Carrinha"), vanProfiles.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement(Field, { label: "Carrinhas guardadas" }, /* @__PURE__ */ React.createElement("select", { style: S.input, value: selectedVanId, onChange: (e) => selectVanProfile(e.target.value) }, /* @__PURE__ */ React.createElement("option", { value: "" }, "— escolher / editar à mão —"), vanProfiles.map((v) => /* @__PURE__ */ React.createElement("option", { key: v.id, value: v.id }, v.name, " (", v.length, "×", v.width, "×", v.height, "cm)")))), selectedVanId && /* @__PURE__ */ React.createElement("button", { style: { ...S.iconBtn, marginTop: 8 }, onClick: () => deleteVanProfile(selectedVanId) }, "🗑 Remover carrinha guardada")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement(Field, { label: "Nome (para guardar)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: currentVan.name, onChange: (e) => setCurrentVan({ ...currentVan, name: e.target.value }), placeholder: "ex: Caddy" }))), /* @__PURE__ */ React.createElement("div", { style: S.grid2 }, /* @__PURE__ */ React.createElement(Field, { label: "Comprimento (cm)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", value: currentVan.length, onChange: (e) => setCurrentVan({ ...currentVan, length: e.target.value }), placeholder: "200" })), /* @__PURE__ */ React.createElement(Field, { label: "Largura (cm)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", value: currentVan.width, onChange: (e) => setCurrentVan({ ...currentVan, width: e.target.value }), placeholder: "120" })), /* @__PURE__ */ React.createElement(Field, { label: "Altura (cm)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", value: currentVan.height, onChange: (e) => setCurrentVan({ ...currentVan, height: e.target.value }), placeholder: "110" })), /* @__PURE__ */ React.createElement(Field, { label: "Capacidade de peso (kg, opcional)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", value: currentVan.capacity, onChange: (e) => setCurrentVan({ ...currentVan, capacity: e.target.value }), placeholder: "800" }))), /* @__PURE__ */ React.createElement("button", { style: S.secondaryBtnWide, onClick: saveVanProfile }, "+ Guardar esta carrinha")), /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Carga (várias caixas)"), cargoItems.length > 0 && /* @__PURE__ */ React.createElement("div", { style: S.quoteList }, cargoItems.map((it) => {
       const doesntFit = hasVan && !boxFitsRotated(it, currentVan);
-      return /* @__PURE__ */ React.createElement("div", { key: it.id, style: { ...S.quoteRow, cursor: "default", ...doesntFit ? { border: "1px solid #D9705A" } : {} } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: S.quoteSupplier }, it.qty, "× ", it.length, "×", it.width, "×", it.height, "cm", it.weight ? `, ${it.weight}kg/un` : ""), doesntFit && /* @__PURE__ */ React.createElement("div", { style: { ...S.quoteNotes, color: "#D9705A" } }, "Não cabe nesta carrinha (nem rodada)")), /* @__PURE__ */ React.createElement("button", { style: S.iconBtnSmall, onClick: () => removeCargoItem(it.id) }, "🗑"));
-    })), /* @__PURE__ */ React.createElement("div", { style: S.addQuoteGrid }, /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", placeholder: "Comprimento (cm)", value: cargoDraft.length, onChange: (e) => setCargoDraft({ ...cargoDraft, length: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", placeholder: "Largura (cm)", value: cargoDraft.width, onChange: (e) => setCargoDraft({ ...cargoDraft, width: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", placeholder: "Altura (cm)", value: cargoDraft.height, onChange: (e) => setCargoDraft({ ...cargoDraft, height: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", placeholder: "Peso por unidade (kg)", value: cargoDraft.weight, onChange: (e) => setCargoDraft({ ...cargoDraft, weight: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", min: "1", placeholder: "Quantidade", value: cargoDraft.qty, onChange: (e) => setCargoDraft({ ...cargoDraft, qty: e.target.value }) }), /* @__PURE__ */ React.createElement("button", { style: S.secondaryBtn, onClick: addCargoItem }, "+ Adicionar caixa")))), hasVan && cargoItems.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { ...S.card, marginTop: 24 } }, /* @__PURE__ */ React.createElement("div", { style: S.rowBetween }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Arrumação simulada"), /* @__PURE__ */ React.createElement("div", { style: { ...S.badge, marginTop: 0, ...overall ? S.badgeOk : S.badgeWarn } }, overall ? "✓ Cabe tudo" : "⚠ Não cabe tudo")), /* @__PURE__ */ React.createElement(CargoIsoView, { van: currentVan, placed: pack.placed }), /* @__PURE__ */ React.createElement("div", { style: { ...S.ticketMeta, marginTop: 14 } }, /* @__PURE__ */ React.createElement("span", null, pack.placed.length, " caixa(s) colocadas"), pack.unplaced.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { style: S.dot }, "•"), /* @__PURE__ */ React.createElement("span", { style: { color: "#D9705A" } }, pack.unplaced.length, " não coube/couberam")), weightRatio !== null && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { style: S.dot }, "•"), /* @__PURE__ */ React.createElement("span", { style: { color: fitsByWeight ? "#5FAE7D" : "#D9705A" } }, "Peso: ", totalWeight, "kg (", (weightRatio * 100).toFixed(0), "% da capacidade)"))), /* @__PURE__ */ React.createElement("div", { style: S.hint }, "Simulação por empilhamento em camadas (com rotação automática por caixa) — arrumação real pode variar consoante fragilidade, empilhamento e forma de carregar.")));
-  })(), isNewView && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.pageHeading }, "Novo pedido"), /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Colar texto (WhatsApp)"), /* @__PURE__ */ React.createElement(
-    "textarea",
-    {
-      style: S.textarea,
-      rows: 4,
-      placeholder: "Cola aqui a mensagem do fornecedor/cliente...\nex: pickup at FRA apt - ready this afternoon\ndelivery at NAP apt - within Monday 17thAug\n1x 30x20x20cm 0.60kg",
-      value: pasteText,
-      onChange: (e) => setPasteText(e.target.value)
-    }
-  ), /* @__PURE__ */ React.createElement("button", { style: S.secondaryBtnWide, onClick: applyPaste }, "Extrair para o formulário ↓"), /* @__PURE__ */ React.createElement("div", { style: S.hint }, "Extração simples por palavras-chave (pickup/delivery/carga/entrega) — confirma sempre os campos abaixo.")), /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Detalhes do pedido"), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement(Field, { label: "Nome do pedido (opcional, para te situares)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.label, onChange: (e) => setForm({ ...form, label: e.target.value }), placeholder: "ex: Cliente Acme - envio Setembro" }))), /* @__PURE__ */ React.createElement("div", { style: S.grid2 }, /* @__PURE__ */ React.createElement(Field, { label: "Local de carga" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.pickupLoc, onChange: (e) => setForm({ ...form, pickupLoc: e.target.value }), placeholder: "FRA apt" })), /* @__PURE__ */ React.createElement(Field, { label: "Data / hora de carga" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.pickupTime, onChange: (e) => setForm({ ...form, pickupTime: e.target.value }), placeholder: "ready this afternoon" })), /* @__PURE__ */ React.createElement(Field, { label: "Local de entrega" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.deliveryLoc, onChange: (e) => setForm({ ...form, deliveryLoc: e.target.value }), placeholder: "NAP apt" })), /* @__PURE__ */ React.createElement(Field, { label: "Carga (dimensões / peso)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.cargo, onChange: (e) => setForm({ ...form, cargo: e.target.value }), placeholder: "1x 30x20x20cm, 0.60kg" }))), /* @__PURE__ */ React.createElement("button", { style: { ...S.primaryBtn, opacity: canCreate ? 1 : 0.45, cursor: canCreate ? "pointer" : "not-allowed" }, disabled: !canCreate, onClick: addShipment }, "+ Criar pedido"), (form.pickupLoc.trim() || form.deliveryLoc.trim()) && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.divider }), React.createElement(MsgToggle, { open: !!openMsg.form, onToggle: () => setOpenMsg({ ...openMsg, form: !openMsg.form }) }), openMsg.form && React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.rowBetween }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Mensagem para fornecedores"), /* @__PURE__ */ React.createElement(
+      return /* @__PURE__ */ React.createElement("div", { key: it.id, style: { ...S.quoteRow, cursor: "default", ...doesntFit ? { border: "1px solid #ef4444" } : {} } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: S.quoteSupplier }, it.qty, "× ", it.length, "×", it.width, "×", it.height, "cm", it.weight ? `, ${it.weight}kg/un` : ""), doesntFit && /* @__PURE__ */ React.createElement("div", { style: { ...S.quoteNotes, color: "#ef4444" } }, "Não cabe nesta carrinha (nem rodada)")), /* @__PURE__ */ React.createElement("button", { style: S.iconBtnSmall, onClick: () => removeCargoItem(it.id) }, "🗑"));
+    })), /* @__PURE__ */ React.createElement("div", { style: S.addQuoteGrid }, /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", placeholder: "Comprimento (cm)", value: cargoDraft.length, onChange: (e) => setCargoDraft({ ...cargoDraft, length: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", placeholder: "Largura (cm)", value: cargoDraft.width, onChange: (e) => setCargoDraft({ ...cargoDraft, width: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", placeholder: "Altura (cm)", value: cargoDraft.height, onChange: (e) => setCargoDraft({ ...cargoDraft, height: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", placeholder: "Peso por unidade (kg)", value: cargoDraft.weight, onChange: (e) => setCargoDraft({ ...cargoDraft, weight: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { style: S.input, type: "number", min: "1", placeholder: "Quantidade", value: cargoDraft.qty, onChange: (e) => setCargoDraft({ ...cargoDraft, qty: e.target.value }) }), /* @__PURE__ */ React.createElement("button", { style: S.secondaryBtn, onClick: addCargoItem }, "+ Adicionar caixa")))), hasVan && cargoItems.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { ...S.card, marginTop: 24 } }, /* @__PURE__ */ React.createElement("div", { style: S.rowBetween }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Arrumação simulada"), /* @__PURE__ */ React.createElement("div", { style: { ...S.badge, marginTop: 0, ...overall ? S.badgeOk : S.badgeWarn } }, overall ? "✓ Cabe tudo" : "⚠ Não cabe tudo")), /* @__PURE__ */ React.createElement(CargoIsoView, { van: currentVan, placed: pack.placed }), /* @__PURE__ */ React.createElement("div", { style: { ...S.ticketMeta, marginTop: 14 } }, /* @__PURE__ */ React.createElement("span", null, pack.placed.length, " caixa(s) colocadas"), pack.unplaced.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { style: S.dot }, "•"), /* @__PURE__ */ React.createElement("span", { style: { color: "#ef4444" } }, pack.unplaced.length, " não coube/couberam")), weightRatio !== null && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { style: S.dot }, "•"), /* @__PURE__ */ React.createElement("span", { style: { color: fitsByWeight ? "#22c55e" : "#ef4444" } }, "Peso: ", totalWeight, "kg (", (weightRatio * 100).toFixed(0), "% da capacidade)"))), /* @__PURE__ */ React.createElement("div", { style: S.hint }, "Simulação por empilhamento em camadas (com rotação automática por caixa) — arrumação real pode variar consoante fragilidade, empilhamento e forma de carregar.")));
+  })(), isNewView && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.pageHeading }, "Novo pedido"), /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Detalhes do pedido"), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement(Field, { label: "Nome do pedido (opcional, para te situares)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.label, onChange: (e) => setForm({ ...form, label: e.target.value }), placeholder: "ex: Cliente Acme - envio Setembro" }))), /* @__PURE__ */ React.createElement("div", { style: S.grid2 }, /* @__PURE__ */ React.createElement(Field, { label: "Local de carga" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.pickupLoc, onChange: (e) => setForm({ ...form, pickupLoc: e.target.value }), placeholder: "FRA apt" })), /* @__PURE__ */ React.createElement(Field, { label: "Data / hora de carga" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.pickupTime, onChange: (e) => setForm({ ...form, pickupTime: e.target.value }), placeholder: "ready this afternoon" })), /* @__PURE__ */ React.createElement(Field, { label: "Local de entrega" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.deliveryLoc, onChange: (e) => setForm({ ...form, deliveryLoc: e.target.value }), placeholder: "NAP apt" })), /* @__PURE__ */ React.createElement(Field, { label: "Carga (dimensões / peso)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: form.cargo, onChange: (e) => setForm({ ...form, cargo: e.target.value }), placeholder: "1x 30x20x20cm, 0.60kg" }))), /* @__PURE__ */ React.createElement("button", { style: { ...S.primaryBtn, opacity: canCreate ? 1 : 0.45, cursor: canCreate ? "pointer" : "not-allowed" }, disabled: !canCreate, onClick: addShipment }, "+ Criar pedido"), (form.pickupLoc.trim() || form.deliveryLoc.trim()) && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.divider }), React.createElement(MsgToggle, { open: !!openMsg.form, onToggle: () => setOpenMsg({ ...openMsg, form: !openMsg.form }) }), openMsg.form && React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: S.rowBetween }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Mensagem para fornecedores"), /* @__PURE__ */ React.createElement(
     LangToggle,
     {
       value: supplierLang,
@@ -2378,7 +2342,7 @@ function DispatchDesk() {
         onChange: (e) => updateShipmentField(sh.id, "label", e.target.value),
         placeholder: "Dar nome a este pedido..."
       }
-    ), /* @__PURE__ */ React.createElement("button", { style: S.iconBtn, onClick: () => requestDeleteShipment(sh.id) }, "🗑 Remover")), /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Detalhes do pedido"), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement(Field, { label: "Nome do cliente (opcional)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.clientName, onChange: (e) => updateShipmentField(sh.id, "clientName", e.target.value), placeholder: "Client Name" }))), /* @__PURE__ */ React.createElement("div", { style: S.grid2 }, /* @__PURE__ */ React.createElement(Field, { label: "Local de carga" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.pickupLoc, onChange: (e) => updateShipmentField(sh.id, "pickupLoc", e.target.value), placeholder: "FRA apt" })), /* @__PURE__ */ React.createElement(Field, { label: "Data / hora de carga" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.pickupTime, onChange: (e) => updateShipmentField(sh.id, "pickupTime", e.target.value), placeholder: "ready this afternoon" })), /* @__PURE__ */ React.createElement(Field, { label: "Local de entrega" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.deliveryLoc, onChange: (e) => updateShipmentField(sh.id, "deliveryLoc", e.target.value), placeholder: "NAP apt" })), /* @__PURE__ */ React.createElement(Field, { label: "Carga (dimensões / peso)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.cargo, onChange: (e) => updateShipmentField(sh.id, "cargo", e.target.value), placeholder: "1x 30x20x20cm, 0.60kg" })))), React.createElement("div", { style: { marginTop: 24 } }, React.createElement(PartnerSuggestions, { key: sh.id, sh, partners, fleet, setActiveTabId })), /* @__PURE__ */ React.createElement("div", { className: "dd-grid", style: { marginTop: 24 } }, /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Cotações"), sh.quotes.length > 0 && /* @__PURE__ */ React.createElement("div", { style: S.quoteList }, sh.quotes.slice().sort((a, b) => a.costPrice - b.costPrice).map((q) => /* @__PURE__ */ React.createElement("label", { key: q.id, style: { ...S.quoteRow, ...q.id === chosenId ? S.quoteRowActive : {} } }, /* @__PURE__ */ React.createElement("input", { type: "radio", name: `quote-${sh.id}`, checked: q.id === chosenId, onChange: () => setSelectedQuote({ ...selectedQuote, [sh.id]: q.id }), style: { marginRight: 8 } }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: S.quoteSupplier }, q.supplier, q.id === best && /* @__PURE__ */ React.createElement("span", { style: S.bestTag }, "melhor preço")), (q.pickupTime || q.deliveryTime) && /* @__PURE__ */ React.createElement("div", { style: S.quoteNotes }, q.pickupTime && /* @__PURE__ */ React.createElement(React.Fragment, null, "carga: ", q.pickupTime), q.pickupTime && q.deliveryTime && " · ", q.deliveryTime && /* @__PURE__ */ React.createElement(React.Fragment, null, "entrega: ", q.deliveryTime))), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceCol }, /* @__PURE__ */ React.createElement("div", { style: S.quotePrice }, "€", q.costPrice.toLocaleString("en-US")), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceLabel }, "fornecedor"), q.sellPrice != null && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { ...S.quotePrice, color: "#5FAE7D" } }, "€", q.sellPrice.toLocaleString("en-US")), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceLabel }, "cliente"))), /* @__PURE__ */ React.createElement("button", { style: S.iconBtnSmall, onClick: (e) => {
+    ), /* @__PURE__ */ React.createElement("button", { style: S.iconBtn, onClick: () => requestDeleteShipment(sh.id) }, "🗑 Remover")), /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Detalhes do pedido"), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement(Field, { label: "Nome do cliente (opcional)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.clientName, onChange: (e) => updateShipmentField(sh.id, "clientName", e.target.value), placeholder: "Client Name" }))), /* @__PURE__ */ React.createElement("div", { style: S.grid2 }, /* @__PURE__ */ React.createElement(Field, { label: "Local de carga" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.pickupLoc, onChange: (e) => updateShipmentField(sh.id, "pickupLoc", e.target.value), placeholder: "FRA apt" })), /* @__PURE__ */ React.createElement(Field, { label: "Data / hora de carga" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.pickupTime, onChange: (e) => updateShipmentField(sh.id, "pickupTime", e.target.value), placeholder: "ready this afternoon" })), /* @__PURE__ */ React.createElement(Field, { label: "Local de entrega" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.deliveryLoc, onChange: (e) => updateShipmentField(sh.id, "deliveryLoc", e.target.value), placeholder: "NAP apt" })), /* @__PURE__ */ React.createElement(Field, { label: "Carga (dimensões / peso)" }, /* @__PURE__ */ React.createElement("input", { style: S.input, value: sh.cargo, onChange: (e) => updateShipmentField(sh.id, "cargo", e.target.value), placeholder: "1x 30x20x20cm, 0.60kg" })))), React.createElement("div", { style: { marginTop: 4, marginBottom: 20 } }, React.createElement(MsgToggle, { open: !!openVeh[sh.id], onToggle: () => setOpenVeh({ ...openVeh, [sh.id]: !openVeh[sh.id] }), labelOpen: "▲ Esconder veículos sugeridos", labelClosed: "🚚 Veículos sugeridos (por proximidade)" }), openVeh[sh.id] && React.createElement("div", { style: { marginTop: 16 } }, React.createElement(PartnerSuggestions, { key: sh.id, sh, partners, fleet, setActiveTabId }))), /* @__PURE__ */ React.createElement("div", { className: "dd-grid", style: { marginTop: 24 } }, /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Cotações"), sh.quotes.length > 0 && /* @__PURE__ */ React.createElement("div", { style: S.quoteList }, sh.quotes.slice().sort((a, b) => a.costPrice - b.costPrice).map((q) => /* @__PURE__ */ React.createElement("label", { key: q.id, style: { ...S.quoteRow, ...q.id === chosenId ? S.quoteRowActive : {} } }, /* @__PURE__ */ React.createElement("input", { type: "radio", name: `quote-${sh.id}`, checked: q.id === chosenId, onChange: () => setSelectedQuote({ ...selectedQuote, [sh.id]: q.id }), style: { marginRight: 8 } }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: S.quoteSupplier }, q.supplier, q.id === best && /* @__PURE__ */ React.createElement("span", { style: S.bestTag }, "melhor preço")), (q.pickupTime || q.deliveryTime) && /* @__PURE__ */ React.createElement("div", { style: S.quoteNotes }, q.pickupTime && /* @__PURE__ */ React.createElement(React.Fragment, null, "carga: ", q.pickupTime), q.pickupTime && q.deliveryTime && " · ", q.deliveryTime && /* @__PURE__ */ React.createElement(React.Fragment, null, "entrega: ", q.deliveryTime))), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceCol }, /* @__PURE__ */ React.createElement("div", { style: S.quotePrice }, "€", q.costPrice.toLocaleString("en-US")), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceLabel }, "fornecedor"), q.sellPrice != null && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { style: { ...S.quotePrice, color: "#22c55e" } }, "€", q.sellPrice.toLocaleString("en-US")), /* @__PURE__ */ React.createElement("div", { style: S.quotePriceLabel }, "cliente"))), /* @__PURE__ */ React.createElement("button", { style: S.iconBtnSmall, onClick: (e) => {
       e.preventDefault();
       removeQuote(sh.id, q.id);
     } }, "🗑")))), /* @__PURE__ */ React.createElement("div", { style: S.addQuoteGrid }, /* @__PURE__ */ React.createElement("input", { style: S.input, placeholder: "Fornecedor", value: draft.supplier, onChange: (e) => updateQuoteDraft(sh.id, "supplier", e.target.value) }), /* @__PURE__ */ React.createElement("input", { style: S.input, placeholder: "Quando carrega", value: draft.pickupTime, onChange: (e) => updateQuoteDraft(sh.id, "pickupTime", e.target.value) }), /* @__PURE__ */ React.createElement("input", { style: S.input, placeholder: "Quando entrega", value: draft.deliveryTime, onChange: (e) => updateQuoteDraft(sh.id, "deliveryTime", e.target.value) }), /* @__PURE__ */ React.createElement("input", { style: S.input, placeholder: "Preço fornecedor (€)", type: "number", value: draft.costPrice, onChange: (e) => updateQuoteDraft(sh.id, "costPrice", e.target.value) }), /* @__PURE__ */ React.createElement("input", { style: S.input, placeholder: "Preço ao cliente (€)", type: "number", value: draft.sellPrice, onChange: (e) => updateQuoteDraft(sh.id, "sellPrice", e.target.value) }), /* @__PURE__ */ React.createElement("button", { style: S.secondaryBtn, onClick: () => addQuote(sh.id) }, "+ Adicionar"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 24 } }, React.createElement(MsgToggle, { open: !!openMsg[sh.id], onToggle: () => setOpenMsg({ ...openMsg, [sh.id]: !openMsg[sh.id] }) }), openMsg[sh.id] && /* @__PURE__ */ React.createElement("div", { style: S.card }, /* @__PURE__ */ React.createElement("div", { style: S.rowBetween }, /* @__PURE__ */ React.createElement("div", { style: S.cardLabel }, "Mensagem para fornecedores"), /* @__PURE__ */ React.createElement(
@@ -2402,71 +2366,71 @@ function DispatchDesk() {
     )), translating === `sh-email-${sh.id}` && /* @__PURE__ */ React.createElement("div", { style: S.hint }, "A traduzir..."), /* @__PURE__ */ React.createElement("pre", { style: S.emailBox }, buildEmail(sh, lang, chosen, getTranslated(`sh-email-${sh.id}`, { pickupLoc: sh.pickupLoc, pickupTime: (chosen == null ? void 0 : chosen.pickupTime) || sh.pickupTime, deliveryLoc: sh.deliveryLoc, deliveryTime: (chosen == null ? void 0 : chosen.deliveryTime) || sh.deliveryTime, cargo: sh.cargo }, lang))), /* @__PURE__ */ React.createElement(CopyBtn, { text: buildEmail(sh, lang, chosen, getTranslated(`sh-email-${sh.id}`, { pickupLoc: sh.pickupLoc, pickupTime: (chosen == null ? void 0 : chosen.pickupTime) || sh.pickupTime, deliveryLoc: sh.deliveryLoc, deliveryTime: (chosen == null ? void 0 : chosen.deliveryTime) || sh.deliveryTime, cargo: sh.cargo }, lang)), label: "Copiar email" })))));
   }), /* @__PURE__ */ React.createElement("div", { style: S.footNote }, "☁️ Os teus pedidos ficam guardados na tua conta — só tu (e os administradores) os veem."))), pendingDeleteId && /* @__PURE__ */ React.createElement(ConfirmDeleteModal, { onConfirm: confirmDeleteShipment, onCancel: cancelDeleteShipment }));
 }
-const mono = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-const sans = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const sans = "'Rajdhani', 'Oswald', sans-serif";
+const mono = sans;
 const S = {
-  shell: { display: "flex", minHeight: "100vh", background: "#0E1013", fontFamily: sans, color: "#EDEBE6" },
-  modalOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 },
-  modalCard: { background: "#171A1E", border: "1px solid #2A2E33", borderRadius: 12, padding: 24, width: "100%", maxWidth: 380 },
-  sidebar: { width: 280, flexShrink: 0, background: "#14171A", borderRight: "1px solid #2A2E33", padding: "28px 20px", display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh", overflowY: "auto" },
+  shell: { display: "flex", gap: 24, minHeight: "100vh", background: "transparent", fontFamily: sans, color: "#f1f5f9" },
+  modalOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 },
+  modalCard: { background: "#0f172a", border: "1px solid rgba(255,107,0,0.35)", borderRadius: 12, padding: 24, width: "100%", maxWidth: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.6)" },
+  sidebar: { width: 260, flexShrink: 0, background: "rgba(10,15,26,0.72)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "20px 16px", display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "calc(100vh - 6px)", overflowY: "auto", boxSizing: "border-box" },
   sidebarHeader: { display: "flex", alignItems: "center", gap: 12, marginBottom: 26 },
-  main: { flex: 1, padding: "40px 48px", overflowY: "auto" },
-  mainInner: { maxWidth: 980, margin: "0 auto" },
-  pageHeading: { fontSize: 22, fontWeight: 700, marginBottom: 18, letterSpacing: 0.2 },
-  headerIcon: { width: 36, height: 36, borderRadius: 9, background: "#E8A33D", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 16 },
+  main: { flex: 1, minWidth: 0, padding: "0 0 24px", overflowY: "visible" },
+  mainInner: { maxWidth: "none", margin: 0 },
+  pageHeading: { fontSize: 20, fontWeight: 700, marginBottom: 18, letterSpacing: 3, textTransform: "uppercase", color: "#f1f5f9" },
+  headerIcon: { width: 36, height: 36, borderRadius: 9, background: "#FF6B00", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 16 },
   title: { fontSize: 17.5, fontWeight: 600, letterSpacing: 0.2 },
-  subtitle: { fontSize: 12, color: "#8B9098", marginTop: 3 },
-  settingsBtn: { background: "transparent", border: "1px solid #2A2E33", borderRadius: 7, padding: "8px 11px", cursor: "pointer", fontSize: 15, color: "#8B9098" },
-  settingsBtnWide: { background: "transparent", border: "1px solid #2A2E33", borderRadius: 7, padding: "10px 12px", cursor: "pointer", fontSize: 13, color: "#8B9098", width: "100%", marginTop: "auto" },
-  navBtn: { background: "transparent", border: "1px solid transparent", borderRadius: 7, padding: "8px 10px", cursor: "pointer", fontSize: 12.5, fontWeight: 500, color: "#8B9098", width: "100%", textAlign: "left" },
-  navBtnActive: { background: "#1D1710", color: "#E8A33D", border: "1px solid #2A2E33" },
+  subtitle: { fontSize: 12, color: "#94a3b8", marginTop: 3 },
+  settingsBtn: { background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, padding: "8px 11px", cursor: "pointer", fontSize: 15, color: "#94a3b8" },
+  settingsBtnWide: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 12px", cursor: "pointer", fontSize: 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#94a3b8", width: "100%", marginTop: "auto", fontFamily: sans },
+  navBtn: { background: "rgba(255,255,255,0.05)", border: "1px solid transparent", borderRadius: 8, padding: "10px 14px", cursor: "pointer", fontSize: 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#94a3b8", width: "100%", textAlign: "left", fontFamily: sans },
+  navBtnActive: { background: "#FF6B00", color: "#ffffff", border: "1px solid #FF6B00" },
   navList: { display: "flex", flexDirection: "column", gap: 6, flex: 1, overflowY: "auto" },
-  navEmpty: { color: "#5F6369", fontSize: 12.5, padding: "10px 2px" },
-  navItem: { display: "flex", alignItems: "center", gap: 8, borderRadius: 8, padding: "10px 12px", cursor: "pointer", border: "1px solid transparent" },
-  navItemActive: { background: "#1D1710", border: "1px solid #E8A33D" },
-  navItemLabel: { fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
-  navItemSub: { fontSize: 11, color: "#8B9098", fontFamily: mono, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
-  card: { background: "#171A1E", border: "1px solid #2A2E33", borderRadius: 12, padding: 22, marginBottom: 24 },
-  cardLabel: { fontSize: 11.5, textTransform: "uppercase", letterSpacing: 0.9, color: "#8B9098", marginBottom: 14, fontWeight: 600 },
+  navEmpty: { color: "#64748b", fontSize: 12.5, padding: "10px 2px" },
+  navItem: { display: "flex", alignItems: "center", gap: 8, borderRadius: 8, padding: "10px 12px", cursor: "pointer", border: "1px solid transparent", background: "rgba(255,255,255,0.03)" },
+  navItemActive: { background: "rgba(255,107,0,0.12)", border: "1px solid #FF6B00" },
+  navItemLabel: { fontSize: 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: 0.3 },
+  navItemSub: { fontSize: 11, color: "#94a3b8", fontFamily: mono, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  card: { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: 24, marginBottom: 20 },
+  cardLabel: { fontSize: 13, textTransform: "uppercase", letterSpacing: 3, color: "#FF6B00", marginBottom: 20, fontWeight: 700 },
   rowBetween: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
-  langToggle: { display: "flex", border: "1px solid #2A2E33", borderRadius: 7, overflow: "hidden", marginBottom: 12 },
-  langBtn: { background: "transparent", border: "none", color: "#8B9098", fontSize: 11.5, fontWeight: 700, padding: "6px 12px", cursor: "pointer", letterSpacing: 0.4 },
-  langBtnActive: { background: "#E8A33D", color: "#0E1013" },
+  langToggle: { display: "flex", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, overflow: "hidden", marginBottom: 12 },
+  langBtn: { background: "transparent", border: "none", color: "#94a3b8", fontSize: 12, fontWeight: 700, padding: "6px 14px", cursor: "pointer", letterSpacing: 1.5, fontFamily: sans },
+  langBtnActive: { background: "#FF6B00", color: "#ffffff" },
   grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 18 },
-  fieldLabel: { fontSize: 12, color: "#B0B4BA", marginBottom: 1 },
-  input: { background: "#0E1013", border: "1px solid #2A2E33", borderRadius: 7, padding: "10px 12px", color: "#EDEBE6", fontSize: 14, fontFamily: sans, outline: "none", width: "100%" },
-  labelInput: { background: "transparent", border: "none", color: "#EDEBE6", fontSize: 20, fontWeight: 700, fontFamily: sans, outline: "none", flex: 1, padding: "2px 0 8px", borderBottom: "1px dashed #2A2E33" },
-  textarea: { background: "#0E1013", border: "1px solid #2A2E33", borderRadius: 7, padding: "10px 12px", color: "#EDEBE6", fontSize: 14, fontFamily: sans, outline: "none", width: "100%", marginBottom: 14, resize: "vertical", lineHeight: 1.6 },
-  primaryBtn: { background: "#E8A33D", color: "#0E1013", border: "none", borderRadius: 7, padding: "11px 16px", fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", width: "100%", justifyContent: "center" },
-  secondaryBtn: { background: "transparent", border: "1px solid #E8A33D", color: "#E8A33D", borderRadius: 7, padding: "10px 12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 13, fontWeight: 600, gridColumn: "1 / -1" },
-  secondaryBtnWide: { background: "transparent", border: "1px solid #E8A33D", color: "#E8A33D", borderRadius: 7, padding: "11px 16px", cursor: "pointer", fontSize: 14, fontWeight: 600, width: "100%" },
-  hint: { fontSize: 12, color: "#5F6369", marginTop: 12, lineHeight: 1.6 },
-  iconBtn: { background: "transparent", border: "1px solid #2A2E33", borderRadius: 7, cursor: "pointer", padding: "7px 12px", fontSize: 12.5, color: "#8B9098" },
+  fieldLabel: { fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: "#94a3b8", marginBottom: 1 },
+  input: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 15, fontWeight: 500, fontFamily: sans, outline: "none", width: "100%", transition: "border-color 0.2s" },
+  labelInput: { background: "transparent", border: "none", color: "#f1f5f9", fontSize: 22, fontWeight: 700, fontFamily: sans, outline: "none", flex: 1, padding: "2px 0 8px", borderBottom: "1px dashed rgba(255,255,255,0.15)", letterSpacing: 0.5 },
+  textarea: { background: "#0a0f1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 7, padding: "10px 12px", color: "#f1f5f9", fontSize: 14, fontFamily: sans, outline: "none", width: "100%", marginBottom: 14, resize: "vertical", lineHeight: 1.6 },
+  primaryBtn: { background: "linear-gradient(135deg, #FF6B00, #FF9500)", color: "#ffffff", border: "none", borderRadius: 8, padding: "12px 24px", fontSize: 13, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", width: "100%", justifyContent: "center", fontFamily: sans },
+  secondaryBtn: { background: "transparent", border: "1px solid #FF6B00", color: "#FF6B00", borderRadius: 8, padding: "10px 12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", gridColumn: "1 / -1", fontFamily: sans },
+  secondaryBtnWide: { background: "transparent", border: "1px solid #FF6B00", color: "#FF6B00", borderRadius: 8, padding: "11px 16px", cursor: "pointer", fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", width: "100%", fontFamily: sans },
+  hint: { fontSize: 13, color: "#64748b", marginTop: 12, lineHeight: 1.6 },
+  iconBtn: { background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, cursor: "pointer", padding: "7px 12px", fontSize: 13, fontWeight: 600, color: "#94a3b8", fontFamily: sans },
   iconBtnSmall: { background: "transparent", border: "none", cursor: "pointer", padding: 4, marginLeft: 8, fontSize: 12 },
-  empty: { color: "#5F6369", fontSize: 13.5, textAlign: "center", padding: "30px 0", border: "1px dashed #2A2E33", borderRadius: 12, lineHeight: 1.6 },
-  tabClose: { background: "transparent", border: "none", cursor: "pointer", padding: 3, color: "#8B9098", fontSize: 11.5 },
+  empty: { color: "#64748b", fontSize: 13.5, textAlign: "center", padding: "30px 0", border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 12, lineHeight: 1.6 },
+  tabClose: { background: "transparent", border: "none", cursor: "pointer", padding: 3, color: "#94a3b8", fontSize: 11.5 },
   ticketHeadRow: { display: "flex", alignItems: "flex-end", gap: 14, marginBottom: 10 },
   route: { display: "flex", alignItems: "center", gap: 9, fontFamily: mono },
-  routeCode: { fontSize: 15, fontWeight: 600, letterSpacing: 1, color: "#8B9098" },
-  routeArrow: { color: "#5F6369" },
-  ticketMeta: { fontSize: 12.5, color: "#8B9098", marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8, lineHeight: 1.6 },
-  dot: { color: "#3E4247" },
+  routeCode: { fontSize: 15, fontWeight: 600, letterSpacing: 1, color: "#94a3b8" },
+  routeArrow: { color: "#64748b" },
+  ticketMeta: { fontSize: 14, color: "#94a3b8", marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8, lineHeight: 1.6 },
+  dot: { color: "#475569" },
   badge: { display: "inline-block", marginTop: 12, fontSize: 11, padding: "4px 10px", borderRadius: 5, fontWeight: 600, letterSpacing: 0.3 },
-  badgeWarn: { background: "rgba(232,163,61,0.15)", color: "#E8A33D" },
-  badgeOk: { background: "rgba(95,174,125,0.15)", color: "#5FAE7D" },
-  divider: { borderTop: "1px dashed #2A2E33", margin: "20px 0" },
+  badgeWarn: { background: "rgba(255,107,0,0.15)", color: "#FF6B00" },
+  badgeOk: { background: "rgba(34,197,94,0.15)", color: "#22c55e" },
+  divider: { borderTop: "1px dashed rgba(255,255,255,0.1)", margin: "20px 0" },
   quoteList: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 },
-  quoteRow: { display: "flex", alignItems: "center", background: "#0E1013", border: "1px solid #2A2E33", borderRadius: 8, padding: "12px 14px", cursor: "pointer" },
-  quoteRowActive: { border: "1px solid #5FAE7D" },
-  quoteSupplier: { fontSize: 13.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 },
-  bestTag: { fontSize: 10, background: "rgba(95,174,125,0.18)", color: "#5FAE7D", padding: "2px 7px", borderRadius: 4, fontWeight: 700, letterSpacing: 0.3 },
-  quoteNotes: { fontSize: 12, color: "#8B9098", marginTop: 4 },
+  quoteRow: { display: "flex", alignItems: "center", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "12px 14px", cursor: "pointer" },
+  quoteRowActive: { border: "1px solid #22c55e" },
+  quoteSupplier: { fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 },
+  bestTag: { fontSize: 10, background: "rgba(34,197,94,0.18)", color: "#22c55e", padding: "2px 7px", borderRadius: 4, fontWeight: 700, letterSpacing: 0.3 },
+  quoteNotes: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
   quotePriceCol: { display: "flex", flexDirection: "column", alignItems: "flex-end", marginRight: 8 },
-  quotePrice: { fontFamily: mono, fontSize: 14, fontWeight: 600, lineHeight: 1.4 },
-  quotePriceLabel: { fontSize: 10, color: "#5F6369", lineHeight: 1.4, marginBottom: 3 },
+  quotePrice: { fontFamily: mono, fontSize: 16, fontWeight: 700, lineHeight: 1.4 },
+  quotePriceLabel: { fontSize: 10, color: "#64748b", lineHeight: 1.4, marginBottom: 3 },
   addQuoteGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 6 },
-  emailBox: { background: "#0E1013", border: "1px solid #2A2E33", borderRadius: 8, padding: 16, fontSize: 12.5, fontFamily: mono, color: "#C9CDD3", whiteSpace: "pre-wrap", marginBottom: 14, lineHeight: 1.7 },
-  footNote: { fontSize: 11.5, color: "#5F6369", marginTop: 12, textAlign: "center", lineHeight: 1.6 }
+  emailBox: { background: "rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: 16, fontSize: 15, fontWeight: 500, fontFamily: sans, color: "#e2e8f0", whiteSpace: "pre-wrap", marginBottom: 14, lineHeight: 1.8 },
+  footNote: { fontSize: 12, color: "#64748b", marginTop: 12, textAlign: "center", lineHeight: 1.6 }
 };
 window.__ddStart = function () {
   ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(DispatchDesk, null));
