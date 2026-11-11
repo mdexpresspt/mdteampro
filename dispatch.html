@@ -2314,6 +2314,17 @@ function DispatchDesk() {
       } : sh;
     }));
     setQuoteDrafts((d) => ({ ...d, [shipmentId]: { supplier: "", pickupTime: "", deliveryTime: "", costPrice: "", sellPrice: "" } }));
+    setTimeout(() => {
+      try {
+        if (window.__ddFit) window.__ddFit();
+        const inp = document.querySelector('input[placeholder="Fornecedor"]');
+        if (!inp) return;
+        const grid = inp.parentElement;
+        inp.focus({ preventScroll: true });
+        grid.scrollIntoView({ block: "end", behavior: "smooth" });
+      } catch (err) {
+      }
+    }, 150);
   }
   function removeQuote(shipmentId, quoteId) {
     setShipments((list) => list.map((sh) => sh.id === shipmentId ? { ...sh, quotes: sh.quotes.filter((q) => q.id !== quoteId) } : sh));
