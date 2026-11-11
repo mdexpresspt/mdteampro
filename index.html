@@ -376,8 +376,8 @@
   #dispatch-bar.show { display: flex; }
   #dispatch-user-select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px 12px; color: #f1f5f9; font-size: 13px; outline: none; }
   #dispatch-user-select option { background: #0f172a; }
-  #dispatch-frame { width: 100%; height: calc(100vh - 200px); min-height: 640px; border: 0; background: transparent; display: block; }
-  #dispatch-bar.show ~ #dispatch-frame { height: calc(100vh - 252px); }
+  #dispatch-frame { width: 100%; height: 800px; border: 0; background: transparent; display: block; overflow: hidden; }
+  #dd-status { position: fixed; right: 12px; bottom: 10px; z-index: 50; display: none; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #64748b; background: rgba(10,15,26,0.85); padding: 4px 10px; border-radius: 6px; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -455,7 +455,8 @@
       <label for="dispatch-user-select">👑 Ver pedidos de:</label>
       <select id="dispatch-user-select" onchange="changeDispatchUser()"></select>
     </div>
-    <iframe id="dispatch-frame" title="Dispatch Desk" src="about:blank" allowtransparency="true"></iframe>
+    <iframe id="dispatch-frame" title="Dispatch Desk" src="about:blank" scrolling="no" allowtransparency="true"></iframe>
+    <div id="dd-status"></div>
   </div>
 
   <!-- NOTAS TAB -->
@@ -609,7 +610,11 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['ordens','dispatch','notas'][i] === name));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  if (name === 'dispatch') loadDispatch();
+  document.getElementById('dd-status').style.display = name === 'dispatch' ? 'block' : 'none';
+  if (name === 'dispatch') {
+    loadDispatch();
+    setTimeout(() => { try { document.getElementById('dispatch-frame').contentWindow.__ddFit(); } catch (e) {} scheduleDispatchSync(); }, 60);
+  }
 }
 
 // ─── FORMAT ──────────────────────────────────────────────────────────────────
@@ -1265,6 +1270,43 @@ if (isConfigured) {
     if (document.getElementById('tab-dispatch').classList.contains('active')) loadDispatch();
   });
 }
+
+
+// ─── DISPATCH DESK: um único scroll (o iframe tem a altura do conteúdo) ──────
+window.ddStatus = function (t) { const el = document.getElementById('dd-status'); if (el) el.textContent = t; };
+
+let dispatchSyncPending = false;
+function syncDispatchFrame() {
+  dispatchSyncPending = false;
+  if (!document.getElementById('tab-dispatch').classList.contains('active')) return;
+  const frame = document.getElementById('dispatch-frame');
+  let doc = null;
+  try { doc = frame.contentDocument; } catch (e) { return; }
+  if (!doc || !doc.documentElement) return;
+  const header = document.getElementById('header').offsetHeight;
+  const rect = frame.getBoundingClientRect();
+  const root = doc.documentElement;
+  root.style.setProperty('--parent-vh', window.innerHeight + 'px');
+  root.style.setProperty('--view-top', Math.max(0, header - rect.top) + 'px');
+  // barra lateral "colada": acompanha o scroll da página enquanto cabe no ecrã
+  const sb = doc.getElementById('dd-sidebar');
+  if (!sb) return;
+  const gap = 12;
+  const avail = window.innerHeight - header - gap * 2;
+  const maxShift = Math.max(0, frame.clientHeight - sb.offsetHeight);
+  let shift = 0;
+  if (sb.offsetHeight <= avail) shift = Math.min(Math.max(0, header + gap - rect.top), maxShift);
+  sb.style.transform = shift ? 'translateY(' + Math.round(shift) + 'px)' : '';
+}
+function scheduleDispatchSync() {
+  if (dispatchSyncPending) return;
+  dispatchSyncPending = true;
+  requestAnimationFrame(syncDispatchFrame);
+}
+window.addEventListener('scroll', scheduleDispatchSync, { passive: true });
+window.addEventListener('resize', scheduleDispatchSync);
+document.getElementById('dispatch-frame').addEventListener('load', () => { scheduleDispatchSync(); setTimeout(scheduleDispatchSync, 300); });
+setInterval(scheduleDispatchSync, 400);
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 if (!isConfigured) {
